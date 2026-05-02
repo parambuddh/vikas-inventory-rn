@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Vikas Marketing",
+    "slug": "vikas-inventory",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "runtimeVersion": "1.0.0",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vikas.inventory"
+    },
+    "android": {
+      "edgeToEdgeEnabled": true,
+      "package": "com.vikas.inventory",
+      "permissions": [
+        "INTERNET"
+      ]
+    },
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}
