@@ -113,7 +113,7 @@ const ProductRow = ({ product, onUpdateProduct }) => {
               </Text>
             </View>
             <TouchableOpacity style={styles.masterEditBtn} onPress={() => setEditing(true)}>
-              <Text style={{fontSize:16}}>✏️</Text>
+              <Feather name="edit-2" size={14} color={COLORS.primary} />
             </TouchableOpacity>
           </>
         )}
@@ -153,7 +153,7 @@ export const InventoryManagementScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+          <Feather name="arrow-left" size={18} color={COLORS.gray900} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Inventory</Text>
         <View style={{ width: 36 }} />
@@ -180,7 +180,7 @@ export const InventoryManagementScreen = ({ navigation }) => {
 
       {/* Search */}
       <View style={styles.searchWrap}>
-        <Feather name="search" size={16} color={COLORS.gray400} style={{marginRight: SPACING.sm}} />
+        <Feather name="search" size={16} color={COLORS.gray400} style={{marginRight: SPACING.sm, marginTop: Platform.OS === 'web' ? 1 : 0}} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name or SKU..."
@@ -255,8 +255,8 @@ const styles = StyleSheet.create({
   productTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
   productName: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600', color: COLORS.gray900 },
   productMeta: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, marginTop: 2 },
-  stockBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 2, borderRadius: BORDER_RADIUS.full },
-  stockBadgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600' },
+  stockBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.sm, height: 20, borderRadius: BORDER_RADIUS.full },
+  stockBadgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', lineHeight: Platform.OS === 'web' ? 12 : undefined },
 
   productBottom: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.backgroundAlt,

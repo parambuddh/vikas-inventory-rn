@@ -54,13 +54,13 @@ const LiveOrderCard = ({ order, onPress }) => {
           <Text style={styles.liveOrderSalesman}>by {order.salesmanName}</Text>
         </View>
         <View style={[styles.liveOrderBadge, { backgroundColor: status.bg }]}>
-          <Feather name={status.iconName} size={12} color={status.color} style={{marginRight:4}} />
+          <Feather name={status.iconName} size={12} color={status.color} style={{marginRight:4, marginTop:Platform.OS === 'web' ? 1 : 0}} />
           <Text style={[styles.liveOrderBadgeText, { color: status.color }]}>{status.label}</Text>
         </View>
       </View>
       <View style={styles.liveOrderBody}>
         <View style={{flexDirection:'row', alignItems:'center'}}>
-          <Feather name="briefcase" size={14} color={COLORS.gray400} style={{marginRight:6}} />
+          <Feather name="briefcase" size={13} color={COLORS.gray400} style={{marginRight:6, marginTop:1}} />
           <Text style={styles.liveOrderCustomer}>{order.customerName}</Text>
         </View>
         <Text style={styles.liveOrderAmount}>₹{order.total.toLocaleString('en-IN')}</Text>
@@ -131,8 +131,9 @@ export const AdminDashboardScreen = ({ navigation }) => {
                 <View style={styles.liveDot} />
                 <Text style={styles.feedTitle}>Live Order Feed</Text>
               </View>
-              <TouchableOpacity onPress={() => navigation.navigate('AdminOrders')}>
-                <Text style={styles.viewAllText}>View All →</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('AdminOrders')} style={{flexDirection:'row', alignItems:'center'}}>
+                <Text style={styles.viewAllText}>View All </Text>
+                <Feather name="chevron-right" size={14} color={COLORS.primary} style={{marginTop:1}} />
               </TouchableOpacity>
             </View>
 
@@ -233,15 +234,16 @@ const styles = StyleSheet.create({
   notifBtn: { position: 'relative', padding: SPACING.sm },
   notifIcon: { fontSize: 22 },
   notifBadge: {
-    position: 'absolute', top: 0, right: 0,
-    backgroundColor: COLORS.danger, width: 18, height: 18,
-    borderRadius: 9, justifyContent: 'center', alignItems: 'center',
+    position: 'absolute', top: 2, right: 2,
+    backgroundColor: COLORS.danger, width: 16, height: 16,
+    borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1.5, borderColor: COLORS.primary, // Blend with background header color
   },
-  notifBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '700' },
+  notifBadgeText: { color: COLORS.white, fontSize: 9, fontWeight: '800' },
   logoutBtn: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
+    width: 36, height: 36, borderRadius: 18,
+    justifyContent: 'center', alignItems: 'center',
   },
   logoutText: { color: COLORS.white, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
 
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     width: '48%', padding: SPACING.md, borderRadius: BORDER_RADIUS.lg,
     ...SHADOWS.md, elevation: 5,
   },
-  metricTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.xs },
+  metricTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.xs },
   metricIcon: { fontSize: 20 },
   metricValue: { fontSize: TYPOGRAPHY.sizes.xl, fontWeight: '800' },
   metricTitle: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '500', color: COLORS.gray500 },
@@ -287,8 +289,8 @@ const styles = StyleSheet.create({
   liveOrderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   liveOrderId: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700', color: COLORS.gray900 },
   liveOrderSalesman: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, marginTop: 2 },
-  liveOrderBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full },
-  liveOrderBadgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600' },
+  liveOrderBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, height: 22, borderRadius: BORDER_RADIUS.full },
+  liveOrderBadgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '700', lineHeight: Platform.OS === 'web' ? 14 : undefined },
 
   liveOrderBody: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

@@ -107,7 +107,7 @@ export const AnalyticsScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+          <Feather name="arrow-left" size={18} color={COLORS.gray900} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Analytics Suite</Text>
         <View style={{ width: 36 }} />
@@ -138,7 +138,7 @@ export const AnalyticsScreen = ({ navigation }) => {
         {/* Chart 1: Revenue Trend */}
         <View style={styles.chartContainer}>
           <View style={styles.chartHeaderRow}>
-            <Feather name="trending-up" size={16} color={COLORS.primary} />
+            <Feather name="trending-up" size={16} color={COLORS.primary} style={{marginTop: Platform.OS === 'web' ? 2 : 0}} />
             <Text style={styles.chartTitleClean}>Revenue Growth (₹k)</Text>
           </View>
           {trendData.labels.length > 1 ? (
@@ -157,7 +157,7 @@ export const AnalyticsScreen = ({ navigation }) => {
         {/* Chart 2: Salesman Output */}
         <View style={styles.chartContainer}>
           <View style={styles.chartHeaderRow}>
-            <Feather name="bar-chart-2" size={16} color="#10B981" />
+            <Feather name="bar-chart-2" size={16} color="#10B981" style={{marginTop: Platform.OS === 'web' ? 2 : 0}} />
             <Text style={styles.chartTitleClean}>Leaderboard Output (₹k)</Text>
           </View>
           {salesmenChart.labels.length > 0 ? (
@@ -182,7 +182,7 @@ export const AnalyticsScreen = ({ navigation }) => {
         {/* Chart 3: Category Pie */}
         <View style={styles.chartContainer}>
           <View style={styles.chartHeaderRow}>
-            <Feather name="pie-chart" size={16} color="#8B5CF6" />
+            <Feather name="pie-chart" size={16} color="#8B5CF6" style={{marginTop: Platform.OS === 'web' ? 2 : 0}} />
             <Text style={styles.chartTitleClean}>Segment Concentration</Text>
           </View>
           {categoryPie.length > 0 ? (

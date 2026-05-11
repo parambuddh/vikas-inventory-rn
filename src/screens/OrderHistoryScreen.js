@@ -28,14 +28,14 @@ const OrderCard = ({ order, onPress }) => {
           <Text style={styles.orderDate}>{order.date}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-          <Feather name={status.iconName} size={11} color={status.color} style={{marginRight: 4}} />
+          <Feather name={status.iconName} size={11} color={status.color} style={{marginRight: 4, marginTop: Platform.OS === 'web' ? 1 : 0}} />
           <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
         </View>
       </View>
 
       <View style={styles.orderBody}>
         <View style={styles.orderCustomerRow}>
-          <Feather name="briefcase" size={14} color={COLORS.gray400} style={{marginRight:6}} />
+          <Feather name="briefcase" size={13} color={COLORS.gray400} style={{marginRight:6, marginTop: 1}} />
           <Text style={styles.orderCustomer} numberOfLines={1}>{order.customerName}</Text>
         </View>
         {order.salesmanName && (
@@ -86,7 +86,7 @@ export const OrderHistoryScreen = ({ navigation }) => {
       <View style={styles.header}>
         {isAdmin ? (
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backText}>←</Text>
+            <Feather name="arrow-left" size={20} color={COLORS.gray900} />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 40 }} />
@@ -141,7 +141,7 @@ export const OrderHistoryScreen = ({ navigation }) => {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📋</Text>
+            <Feather name="clipboard" size={48} color={COLORS.gray300} style={{marginBottom: SPACING.md}} />
             <Text style={styles.emptyText}>No {activeTab.toLowerCase()} orders</Text>
           </View>
         }
@@ -154,7 +154,7 @@ export const OrderHistoryScreen = ({ navigation }) => {
           activeOpacity={0.8}
           onPress={() => navigation.navigate('CustomerSelect')}
         >
-          <Text style={styles.fabIcon}>+</Text>
+          <Feather name="plus" size={20} color={COLORS.white} style={{marginRight: SPACING.xs}} />
           <Text style={styles.fabText}>New Order</Text>
         </TouchableOpacity>
       )}
@@ -188,9 +188,14 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   tabText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '500', color: COLORS.gray600 },
   tabTextActive: { color: COLORS.white },
-  tabCount: { backgroundColor: COLORS.gray200, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 10 },
+  tabCount: { 
+    backgroundColor: COLORS.gray200, 
+    minWidth: 18, height: 18, borderRadius: 9,
+    alignItems: 'center', justifyContent: 'center', 
+    paddingHorizontal: 4 
+  },
   tabCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  tabCountText: { fontSize: 10, fontWeight: '700', color: COLORS.gray600 },
+  tabCountText: { fontSize: 10, fontWeight: '700', color: COLORS.gray600, lineHeight: Platform.OS === 'web' ? 11 : undefined },
   tabCountTextActive: { color: COLORS.white },
 
   list: { padding: SPACING.lg, paddingBottom: 100 }, // Space for FAB
@@ -202,7 +207,7 @@ const styles = StyleSheet.create({
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   orderId: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700', color: COLORS.gray900 },
   orderDate: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400, marginTop: 2 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 20, paddingHorizontal: SPACING.sm, borderRadius: BORDER_RADIUS.full },
   statusText: { fontSize: 11, fontWeight: '700' },
   orderBody: { marginTop: SPACING.md, paddingVertical: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.divider },
   orderCustomerRow: { flexDirection: 'row', alignItems: 'center' },
