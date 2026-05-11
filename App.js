@@ -1,4 +1,5 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
+import { Platform, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -16,28 +17,29 @@ import { OrderDetailsScreen } from './src/screens/OrderDetailsScreen';
 import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
 import { InventoryManagementScreen } from './src/screens/InventoryManagementScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
-import { TasksScreen } from './src/screens/TasksScreen';
 import { InvoiceScreen } from './src/screens/InvoiceScreen';
+import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
+import { SalesmenManagementScreen } from './src/screens/SalesmenManagementScreen';
 
 const Stack = createNativeStackNavigator();
 
 const screenOptions = {
   headerShown: false,
-  animationEnabled: true,
+  animation: 'slide_from_right',
 };
 
+// Salesman: DIRECT LANDING in Order History (Req #1)
 const SalesmanNavigator = () => (
-  <Stack.Navigator screenOptions={screenOptions}>
-    <Stack.Screen name="SalesmanDashboard" component={SalesmanDashboardScreen} />
+  <Stack.Navigator screenOptions={screenOptions} initialRouteName="OrderHistory">
+    <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
     <Stack.Screen name="CustomerSelect" component={CustomerSelectScreen} />
     <Stack.Screen name="ProductListing" component={ProductListingScreen} />
     <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
-    <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
     <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
-    <Stack.Screen name="Invoice" component={InvoiceScreen} />
   </Stack.Navigator>
 );
 
+// Admin: Full access — orders, inventory, invoices, notifications
 const AdminNavigator = () => (
   <Stack.Navigator screenOptions={screenOptions}>
     <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
@@ -46,32 +48,67 @@ const AdminNavigator = () => (
     <Stack.Screen name="Invoice" component={InvoiceScreen} />
     <Stack.Screen name="InventoryManagement" component={InventoryManagementScreen} />
     <Stack.Screen name="Notifications" component={NotificationsScreen} />
-    <Stack.Screen name="Tasks" component={TasksScreen} />
+    <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+    <Stack.Screen name="SalesmenManagement" component={SalesmenManagementScreen} />
   </Stack.Navigator>
 );
+
+// Web responsive wrapper — constrains to mobile width on desktop browsers
+const WebResponsiveWrapper = ({ children }) => {
+  const { width } = useWindowDimensions();
+
+  if (Platform.OS === 'web' && width > 500) {
+    return (
+      <View style={webStyles.outer}>
+        <View style={webStyles.inner}>
+          {children}
+        </View>
+      </View>
+    );
+  }
+  return <>{children}</>;
+};
+
+const webStyles = StyleSheet.create({
+  outer: {
+    flex: 1,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  inner: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: COLORS.background,
+    overflow: 'hidden',
+    ...(Platform.OS === 'web' ? { boxShadow: '0 0 60px rgba(0,0,0,0.1)' } : {}),
+  },
+});
 
 const AppNavigator = () => {
   const { appState } = useContext(AppContext);
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={screenOptions}>
-        {!appState.currentUser ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        ) : appState.userRole === 'salesman' ? (
-          <Stack.Screen name="SalesmanStack" component={SalesmanNavigator} />
-        ) : (
-          <Stack.Screen name="AdminStack" component={AdminNavigator} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <WebResponsiveWrapper>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={screenOptions}>
+          {!appState.currentUser ? (
+            <Stack.Screen name="Login" component={LoginScreen} />
+          ) : appState.userRole === 'salesman' ? (
+            <Stack.Screen name="SalesmanStack" component={SalesmanNavigator} />
+          ) : (
+            <Stack.Screen name="AdminStack" component={AdminNavigator} />
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </WebResponsiveWrapper>
   );
 };
 
 export default function App() {
   return (
     <AppProvider>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <StatusBar style="light" backgroundColor={COLORS.primary} />
       <AppNavigator />
     </AppProvider>
   );

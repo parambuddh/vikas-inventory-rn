@@ -1,336 +1,227 @@
 import React, { useContext, useState, useMemo } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
-  TextInput,
+  View, Text, TouchableOpacity, StyleSheet,
+  SafeAreaView, FlatList, Platform, StatusBar,
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
 
-const OrderItem = ({ order, onPress }) => (
-  <TouchableOpacity
-    style={styles.orderItem}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <View style={styles.orderHeader}>
-      <View>
-        <Text style={styles.orderId}>{order.id}</Text>
-        <Text style={styles.orderCustomer}>{order.customerName}</Text>
-      </View>
-      <View
-        style={[
-          styles.statusBadge,
-          order.status === 'completed' ? styles.statusCompleted : styles.statusPending,
-        ]}
-      >
-        <Text style={styles.statusText}>
-          {order.status === 'completed' ? '✓' : '⏳'} {order.status}
-        </Text>
-      </View>
-    </View>
+const STATUS_TABS = ['All', 'Pending', 'Confirmed', 'Dispatched', 'Delivered'];
 
-    <View style={styles.orderDetails}>
-      <Text style={styles.orderDate}>{order.date}</Text>
-      <Text style={styles.orderAmount}>₹{order.total.toLocaleString('en-IN')}</Text>
-    </View>
+const statusConfig = {
+  pending: { color: COLORS.warning, bg: COLORS.warningLight, label: 'Pending', icon: '⏳' },
+  confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: 'Confirmed', icon: '✓' },
+  dispatched: { color: '#7C3AED', bg: '#EDE9FE', label: 'Dispatched', icon: '🚚' },
+  delivered: { color: COLORS.success, bg: COLORS.successLight, label: 'Delivered', icon: '✅' },
+  cancelled: { color: COLORS.danger, bg: COLORS.dangerLight, label: 'Cancelled', icon: '✕' },
+};
 
-    <View style={styles.orderFooter}>
-      <Text style={styles.itemCount}>{order.items.length} items</Text>
-      <Text style={styles.arrow}>→</Text>
-    </View>
-  </TouchableOpacity>
-);
+const OrderCard = ({ order, onPress }) => {
+  const status = statusConfig[order.status] || statusConfig.pending;
+
+  return (
+    <TouchableOpacity style={styles.orderCard} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.orderHeader}>
+        <View>
+          <Text style={styles.orderId}>{order.id}</Text>
+          <Text style={styles.orderDate}>{order.date}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+          <Text style={[styles.statusText, { color: status.color }]}>{status.icon} {status.label}</Text>
+        </View>
+      </View>
+
+      <View style={styles.orderBody}>
+        <View style={styles.orderCustomerRow}>
+          <Text style={styles.orderCustomerIcon}>🏢</Text>
+          <Text style={styles.orderCustomer} numberOfLines={1}>{order.customerName}</Text>
+        </View>
+        {order.salesmanName && (
+          <Text style={styles.orderSalesman}>by {order.salesmanName}</Text>
+        )}
+      </View>
+
+      <View style={styles.orderFooter}>
+        <View style={styles.orderStat}>
+          <Text style={styles.orderStatLabel}>{order.items.length} items</Text>
+        </View>
+        <Text style={styles.orderTotal}>₹{order.total.toLocaleString('en-IN')}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export const OrderHistoryScreen = ({ navigation }) => {
-  const { appState } = useContext(AppContext);
-  const [searchText, setSearchText] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const { appState, handleLogout } = useContext(AppContext);
+  const [activeTab, setActiveTab] = useState('All');
+  const isAdmin = appState.userRole === 'admin';
 
   const filteredOrders = useMemo(() => {
     let orders = appState.orders;
-
-    if (filterStatus !== 'all') {
-      orders = orders.filter(o => o.status === filterStatus);
+    if (!isAdmin) {
+      orders = orders.filter(o => o.salesmanName === appState.currentUser?.name);
     }
-
-    if (searchText) {
-      orders = orders.filter(
-        o =>
-          o.id.includes(searchText) ||
-          o.customerName.toLowerCase().includes(searchText.toLowerCase())
-      );
+    if (activeTab !== 'All') {
+      orders = orders.filter(o => o.status === activeTab.toLowerCase());
     }
-
     return orders;
-  }, [appState.orders, searchText, filterStatus]);
+  }, [appState.orders, activeTab, isAdmin, appState.currentUser]);
+
+  const tabCounts = useMemo(() => {
+    const orders = isAdmin ? appState.orders : appState.orders.filter(o => o.salesmanName === appState.currentUser?.name);
+    return {
+      All: orders.length,
+      Pending: orders.filter(o => o.status === 'pending').length,
+      Confirmed: orders.filter(o => o.status === 'confirmed').length,
+      Dispatched: orders.filter(o => o.status === 'dispatched').length,
+      Delivered: orders.filter(o => o.status === 'delivered').length,
+    };
+  }, [appState.orders, isAdmin, appState.currentUser]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Enhanced Header (Acts as Home for Salesmen) */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order History</Text>
+        {isAdmin ? (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>🚪 Logout</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={styles.headerTitle}>{isAdmin ? 'All Orders' : 'My History'}</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search order ID..."
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholderTextColor={COLORS.gray400}
-          />
-          {searchText ? (
+      <View style={styles.tabsWrap}>
+        <FlatList
+          horizontal
+          data={STATUS_TABS}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsList}
+          keyExtractor={item => item}
+          renderItem={({ item }) => (
             <TouchableOpacity
-              onPress={() => setSearchText('')}
-              style={styles.clearButton}
+              style={[styles.tab, activeTab === item && styles.tabActive]}
+              onPress={() => setActiveTab(item)}
             >
-              <Text style={styles.clearText}>✕</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.searchIcon}>🔍</Text>
-          )}
-        </View>
-
-        {/* Filter Buttons */}
-        <View style={styles.filterContainer}>
-          {['all', 'pending', 'completed'].map(status => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterButton,
-                filterStatus === status && styles.filterButtonActive,
-              ]}
-              onPress={() => setFilterStatus(status)}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  filterStatus === status && styles.filterButtonTextActive,
-                ]}
-              >
-                {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+              <Text style={[styles.tabText, activeTab === item && styles.tabTextActive]}>
+                {item}
               </Text>
+              {tabCounts[item] > 0 && (
+                <View style={[styles.tabCount, activeTab === item && styles.tabCountActive]}>
+                  <Text style={[styles.tabCountText, activeTab === item && styles.tabCountTextActive]}>
+                    {tabCounts[item]}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
-          ))}
-        </View>
+          )}
+        />
+      </View>
 
-        {/* Orders List */}
-        {filteredOrders.length > 0 ? (
-          <FlatList
-            data={filteredOrders}
-            keyExtractor={item => item.id}
-            renderItem={({ item }) => (
-              <OrderItem
-                order={item}
-                onPress={() =>
-                  navigation.navigate('OrderDetails', { orderId: item.id })
-                }
-              />
-            )}
-            scrollEnabled={false}
+      <FlatList
+        data={filteredOrders}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <OrderCard
+            order={item}
+            onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
           />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyText}>No orders found</Text>
-          </View>
         )}
-      </ScrollView>
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📋</Text>
+            <Text style={styles.emptyText}>No {activeTab.toLowerCase()} orders</Text>
+          </View>
+        }
+      />
+
+      {/* Floating New Order Button for Salesmen Hub Flow (Req #1) */}
+      {!isAdmin && (
+        <TouchableOpacity 
+          style={styles.fab} 
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('CustomerSelect')}
+        >
+          <Text style={styles.fabIcon}>+</Text>
+          <Text style={styles.fabText}>New Order</Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundAlt,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
   header: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
+    backgroundColor: COLORS.white, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + SPACING.md : SPACING.xl,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  backButton: {
-    paddingHorizontal: SPACING.sm,
+  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.backgroundAlt, justifyContent: 'center', alignItems: 'center' },
+  backText: { fontSize: 18, fontWeight: '600', color: COLORS.gray900 },
+  logoutBtn: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: BORDER_RADIUS.md, backgroundColor: COLORS.dangerLight },
+  logoutText: { color: COLORS.danger, fontSize: 12, fontWeight: '700' },
+  headerTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', color: COLORS.gray900, flex: 1, textAlign: 'center' },
+  placeholder: { width: 36 },
+
+  tabsWrap: { backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  tabsList: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, gap: SPACING.sm },
+  tab: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full, backgroundColor: COLORS.backgroundAlt,
+    borderWidth: 1, borderColor: COLORS.border,
   },
-  backText: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
+  tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  tabText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '500', color: COLORS.gray600 },
+  tabTextActive: { color: COLORS.white },
+  tabCount: { backgroundColor: COLORS.gray200, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 10 },
+  tabCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  tabCountText: { fontSize: 10, fontWeight: '700', color: COLORS.gray600 },
+  tabCountTextActive: { color: COLORS.white },
+
+  list: { padding: SPACING.lg, paddingBottom: 100 }, // Space for FAB
+
+  orderCard: {
+    backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg, marginBottom: SPACING.md, ...SHADOWS.sm,
   },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.gray900,
-    flex: 1,
-    textAlign: 'center',
+  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  orderId: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700', color: COLORS.gray900 },
+  orderDate: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400, marginTop: 2 },
+  statusBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full },
+  statusText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600' },
+
+  orderBody: { marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.divider },
+  orderCustomerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  orderCustomerIcon: { fontSize: 14 },
+  orderCustomer: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600', color: COLORS.gray800, flex: 1 },
+  orderSalesman: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400, marginTop: 2, marginLeft: 22 },
+
+  orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.md },
+  orderStat: {},
+  orderStatLabel: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500 },
+  orderTotal: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '800', color: COLORS.primary },
+
+  emptyState: { alignItems: 'center', paddingVertical: SPACING['3xl'] },
+  emptyIcon: { fontSize: 48, marginBottom: SPACING.md },
+  emptyText: { fontSize: TYPOGRAPHY.sizes.base, color: COLORS.gray500, fontWeight: '500' },
+
+  // FLOATING ACTION BUTTON (FAB)
+  fab: {
+    position: 'absolute', bottom: SPACING.xl, right: SPACING.xl,
+    backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center',
+    paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.full, ...SHADOWS.colored(COLORS.primary),
   },
-  placeholder: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    padding: SPACING.lg,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
-    ...SHADOWS.sm,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray900,
-  },
-  searchIcon: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-  },
-  clearButton: {
-    padding: SPACING.sm,
-  },
-  clearText: {
-    color: COLORS.gray400,
-    fontSize: TYPOGRAPHY.sizes.lg,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    marginBottom: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  filterButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-  },
-  filterButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  filterButtonText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray600,
-  },
-  filterButtonTextActive: {
-    color: COLORS.white,
-  },
-  orderItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    ...SHADOWS.sm,
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
-  },
-  orderId: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  orderCustomer: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.gray600,
-    marginTop: SPACING.xs,
-  },
-  statusBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  statusCompleted: {
-    backgroundColor: COLORS.successLight,
-  },
-  statusPending: {
-    backgroundColor: COLORS.warningLight,
-  },
-  statusText: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  orderDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
-    marginVertical: SPACING.sm,
-  },
-  orderDate: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.gray600,
-  },
-  orderAmount: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  orderFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: SPACING.sm,
-  },
-  itemCount: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray500,
-  },
-  arrow: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    color: COLORS.gray400,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING['3xl'],
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: SPACING.md,
-  },
-  emptyText: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray500,
-  },
+  fabIcon: { fontSize: 24, color: COLORS.white, fontWeight: '600', marginRight: SPACING.xs, marginTop: -2 },
+  fabText: { fontSize: TYPOGRAPHY.sizes.base, color: COLORS.white, fontWeight: '700' },
 });

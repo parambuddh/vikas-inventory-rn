@@ -6,22 +6,30 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "runtimeVersion": "1.0.0",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.vikas.inventory"
+    "splash": {
+      "backgroundColor": "#4F46E5"
     },
+    "platforms": ["android", "web"],
     "android": {
       "edgeToEdgeEnabled": true,
       "package": "com.vikas.inventory",
+      "adaptiveIcon": {
+        "backgroundColor": "#4F46E5"
+      },
       "permissions": [
-        "INTERNET"
+        "INTERNET",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ]
     },
-    "web": {},
+    "web": {
+      "bundler": "webpack"
+    },
     "extra": {
       "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
+        "projectId": "58885d07-7211-473b-aeda-875736ff4327"
       }
-    }
+    },
+    "owner": "param2607"
   }
 }

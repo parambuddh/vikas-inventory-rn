@@ -1,533 +1,232 @@
 import React, { useContext, useState, useMemo } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
-  Alert,
-  Modal,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  SafeAreaView, FlatList, Alert, Platform, StatusBar,
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
 
-const InventoryItem = ({ product, onEdit }) => (
-  <TouchableOpacity
-    style={styles.inventoryItem}
-    onPress={() => onEdit(product)}
-    activeOpacity={0.7}
-  >
-    <View style={styles.productInfo}>
-      <Text style={styles.productName}>{product.name}</Text>
-      <Text style={styles.productSku}>{product.sku}</Text>
-    </View>
+const ProductRow = ({ product, onUpdateStock }) => {
+  const [editing, setEditing] = useState(false);
+  const [stockValue, setStockValue] = useState(String(product.stock));
 
-    <View style={styles.stockInfo}>
-      <View style={styles.stockColumn}>
-        <Text style={styles.stockLabel}>Stock</Text>
-        <Text
-          style={[
-            styles.stockValue,
-            !product.inStock && styles.stockValueZero,
-          ]}
-        >
-          {product.stock}
-        </Text>
+  const stockStatus = product.stock === 0 ? 'out' : product.stock < 50 ? 'low' : 'ok';
+  const stockColors = {
+    out: { color: COLORS.danger, bg: COLORS.dangerLight, label: 'Out of Stock' },
+    low: { color: COLORS.warning, bg: COLORS.warningLight, label: 'Low Stock' },
+    ok: { color: COLORS.success, bg: COLORS.successLight, label: 'In Stock' },
+  };
+  const sc = stockColors[stockStatus];
+
+  const handleSave = () => {
+    const newStock = parseInt(stockValue) || 0;
+    onUpdateStock(product.id, newStock);
+    setEditing(false);
+  };
+
+  return (
+    <View style={styles.productRow}>
+      <View style={styles.productTop}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.productName}>{product.name}</Text>
+          <Text style={styles.productMeta}>{product.sku} · HSN {product.hsnCode} · GST {product.gstRate}%</Text>
+        </View>
+        <View style={[styles.stockBadge, { backgroundColor: sc.bg }]}>
+          <Text style={[styles.stockBadgeText, { color: sc.color }]}>{sc.label}</Text>
+        </View>
       </View>
-      <View style={styles.stockColumn}>
-        <Text style={styles.statusLabel}>Status</Text>
-        <View
-          style={[
-            styles.statusBadge,
-            product.inStock ? styles.statusInStock : styles.statusOutOfStock,
-          ]}
-        >
-          <Text style={styles.statusBadgeText}>
-            {product.inStock ? 'In' : 'Out'}
-          </Text>
+
+      <View style={styles.productBottom}>
+        <View style={styles.infoCol}>
+          <Text style={styles.infoLabel}>Price</Text>
+          <Text style={styles.infoValue}>₹{product.price}</Text>
+        </View>
+        <View style={styles.infoDivider} />
+        <View style={styles.infoCol}>
+          <Text style={styles.infoLabel}>Max Disc.</Text>
+          <Text style={styles.infoValue}>{product.maxDiscountPercent}%</Text>
+        </View>
+        <View style={styles.infoDivider} />
+        <View style={styles.infoCol}>
+          <Text style={styles.infoLabel}>Stock</Text>
+          {editing ? (
+            <View style={styles.stockEditRow}>
+              <TextInput
+                style={styles.stockInput}
+                value={stockValue}
+                onChangeText={setStockValue}
+                keyboardType="number-pad"
+                autoFocus
+                selectTextOnFocus
+              />
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+                <Text style={styles.saveBtnText}>✓</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={() => setEditing(true)}>
+              <Text style={[styles.infoValue, { color: sc.color }]}>
+                {product.stock} {product.unit} ✏️
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
-  </TouchableOpacity>
-);
+  );
+};
 
 export const InventoryManagementScreen = ({ navigation }) => {
   const { appState, updateStock } = useContext(AppContext);
-  const [searchText, setSearchText] = useState('');
-  const [editModal, setEditModal] = useState({
-    visible: false,
-    product: null,
-  });
-  const [newStock, setNewStock] = useState('');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all'); // all, low, out
 
   const filteredProducts = useMemo(() => {
-    if (!searchText) return appState.products;
+    let products = appState.products;
 
-    return appState.products.filter(
-      product =>
-        product.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchText.toLowerCase())
-    );
-  }, [searchText, appState.products]);
-
-  const handleEditProduct = (product) => {
-    setEditModal({ visible: true, product });
-    setNewStock(product.stock.toString());
-  };
-
-  const handleSaveStock = () => {
-    const stock = parseInt(newStock);
-    if (isNaN(stock) || stock < 0) {
-      Alert.alert('Invalid Stock', 'Please enter a valid number');
-      return;
+    if (search) {
+      products = products.filter(p =>
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.sku.toLowerCase().includes(search.toLowerCase())
+      );
     }
 
-    updateStock(editModal.product.id, stock);
-    setEditModal({ visible: false, product: null });
-  };
+    if (filter === 'low') products = products.filter(p => p.stock > 0 && p.stock < 50);
+    if (filter === 'out') products = products.filter(p => p.stock === 0);
 
-  const lowStockProducts = appState.products.filter(p => p.stock < 50);
-  const outOfStockProducts = appState.products.filter(p => !p.inStock);
+    return products;
+  }, [appState.products, search, filter]);
+
+  const stats = useMemo(() => ({
+    total: appState.products.length,
+    low: appState.products.filter(p => p.stock > 0 && p.stock < 50).length,
+    out: appState.products.filter(p => p.stock === 0).length,
+  }), [appState.products]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inventory Management</Text>
-        <View style={styles.placeholder} />
+        <Text style={styles.headerTitle}>Inventory</Text>
+        <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
-        style={styles.content}
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <TouchableOpacity style={[styles.statChip, filter === 'all' && styles.statChipActive]} onPress={() => setFilter('all')}>
+          <Text style={[styles.statNum, filter === 'all' && styles.statNumActive]}>{stats.total}</Text>
+          <Text style={[styles.statLabel, filter === 'all' && styles.statLabelActive]}>All</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.statChip, filter === 'low' && styles.statChipWarn]} onPress={() => setFilter('low')}>
+          <Text style={[styles.statNum, filter === 'low' && { color: COLORS.warning }]}>{stats.low}</Text>
+          <Text style={[styles.statLabel, filter === 'low' && { color: COLORS.warning }]}>Low</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.statChip, filter === 'out' && styles.statChipDanger]} onPress={() => setFilter('out')}>
+          <Text style={[styles.statNum, filter === 'out' && { color: COLORS.danger }]}>{stats.out}</Text>
+          <Text style={[styles.statLabel, filter === 'out' && { color: COLORS.danger }]}>Out</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Search */}
+      <View style={styles.searchWrap}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name or SKU..."
+          value={search}
+          onChangeText={setSearch}
+          placeholderTextColor={COLORS.gray400}
+        />
+      </View>
+
+      <FlatList
+        data={filteredProducts}
+        keyExtractor={item => String(item.id)}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-      >
-        {/* Alerts */}
-        {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
-          <View style={styles.alertsSection}>
-            {outOfStockProducts.length > 0 && (
-              <View style={[styles.alert, styles.alertDanger]}>
-                <Text style={styles.alertIcon}>⚠️</Text>
-                <Text style={styles.alertText}>
-                  {outOfStockProducts.length} product(s) out of stock
-                </Text>
-              </View>
-            )}
-            {lowStockProducts.length > 0 && (
-              <View style={[styles.alert, styles.alertWarning]}>
-                <Text style={styles.alertIcon}>⚡</Text>
-                <Text style={styles.alertText}>
-                  {lowStockProducts.length} product(s) low on stock
-                </Text>
-              </View>
-            )}
-          </View>
+        renderItem={({ item }) => (
+          <ProductRow product={item} onUpdateStock={updateStock} />
         )}
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or SKU..."
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholderTextColor={COLORS.gray400}
-          />
-          {searchText ? (
-            <TouchableOpacity
-              onPress={() => setSearchText('')}
-              style={styles.clearButton}
-            >
-              <Text style={styles.clearText}>✕</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.searchIcon}>🔍</Text>
-          )}
-        </View>
-
-        {/* Inventory List */}
-        {filteredProducts.length > 0 ? (
-          <View style={styles.inventoryList}>
-            <View style={styles.listHeader}>
-              <Text style={styles.listHeaderText}>
-                {filteredProducts.length} Products
-              </Text>
-            </View>
-            <FlatList
-              data={filteredProducts}
-              keyExtractor={item => item.id.toString()}
-              renderItem={({ item }) => (
-                <InventoryItem
-                  product={item}
-                  onEdit={handleEditProduct}
-                />
-              )}
-              scrollEnabled={false}
-            />
-          </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📭</Text>
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={{ fontSize: 48 }}>📦</Text>
             <Text style={styles.emptyText}>No products found</Text>
           </View>
-        )}
-      </ScrollView>
-
-      {/* Edit Modal */}
-      <Modal
-        visible={editModal.visible}
-        animationType="slide"
-        transparent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Stock</Text>
-              <TouchableOpacity
-                onPress={() => setEditModal({ visible: false, product: null })}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            {editModal.product && (
-              <>
-                <View style={styles.modalProductInfo}>
-                  <Text style={styles.modalProductName}>
-                    {editModal.product.name}
-                  </Text>
-                  <Text style={styles.modalProductSku}>
-                    SKU: {editModal.product.sku}
-                  </Text>
-                </View>
-
-                <View style={styles.modalInputGroup}>
-                  <Text style={styles.modalLabel}>Current Stock</Text>
-                  <Text style={styles.modalCurrentValue}>
-                    {editModal.product.stock} units
-                  </Text>
-                </View>
-
-                <View style={styles.modalInputGroup}>
-                  <Text style={styles.modalLabel}>New Stock</Text>
-                  <TextInput
-                    style={styles.modalInput}
-                    value={newStock}
-                    onChangeText={setNewStock}
-                    keyboardType="number-pad"
-                    placeholder="Enter new stock quantity"
-                  />
-                </View>
-
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={styles.modalCancelButton}
-                    onPress={() => setEditModal({ visible: false, product: null })}
-                  >
-                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.modalSaveButton}
-                    onPress={handleSaveStock}
-                  >
-                    <Text style={styles.modalSaveButtonText}>Update Stock</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
+        }
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundAlt,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
   header: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
+    backgroundColor: COLORS.white, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + SPACING.md : SPACING.xl,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  backButton: {
-    paddingHorizontal: SPACING.sm,
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.backgroundAlt, justifyContent: 'center', alignItems: 'center' },
+  backText: { fontSize: 18, fontWeight: '600', color: COLORS.gray900 },
+  headerTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', color: COLORS.gray900, flex: 1, textAlign: 'center' },
+
+  // Stats
+  statsRow: { flexDirection: 'row', gap: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  statChip: {
+    flex: 1, alignItems: 'center', paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md, backgroundColor: COLORS.white, ...SHADOWS.sm,
   },
-  backText: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
+  statChipActive: { backgroundColor: COLORS.primary },
+  statChipWarn: { backgroundColor: COLORS.warningLight },
+  statChipDanger: { backgroundColor: COLORS.dangerLight },
+  statNum: { fontSize: TYPOGRAPHY.sizes.xl, fontWeight: '800', color: COLORS.gray900 },
+  statNumActive: { color: COLORS.white },
+  statLabel: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, fontWeight: '500', marginTop: 2 },
+  statLabelActive: { color: 'rgba(255,255,255,0.8)' },
+
+  // Search
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white,
+    marginHorizontal: SPACING.lg, borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md, ...SHADOWS.sm,
   },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.gray900,
-    flex: 1,
-    textAlign: 'center',
+  searchIcon: { fontSize: 14, marginRight: SPACING.sm },
+  searchInput: { flex: 1, paddingVertical: SPACING.md, fontSize: TYPOGRAPHY.sizes.base, color: COLORS.gray900 },
+
+  list: { padding: SPACING.lg },
+
+  // Product Row
+  productRow: {
+    backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg,
+    marginBottom: SPACING.md, ...SHADOWS.sm,
   },
-  placeholder: {
-    width: 40,
+  productTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
+  productName: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600', color: COLORS.gray900 },
+  productMeta: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, marginTop: 2 },
+  stockBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 2, borderRadius: BORDER_RADIUS.full },
+  stockBadgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600' },
+
+  productBottom: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.backgroundAlt,
+    borderRadius: BORDER_RADIUS.md, padding: SPACING.md,
   },
-  content: {
-    flex: 1,
-    padding: SPACING.lg,
+  infoCol: { flex: 1 },
+  infoDivider: { width: 1, height: 30, backgroundColor: COLORS.border, marginHorizontal: SPACING.sm },
+  infoLabel: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: SPACING.xs },
+  infoValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700', color: COLORS.gray900 },
+
+  stockEditRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  stockInput: {
+    width: 60, backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: SPACING.sm, paddingVertical: 2, fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: '700', borderWidth: 1, borderColor: COLORS.primary, textAlign: 'center',
   },
-  alertsSection: {
-    marginBottom: SPACING.lg,
-    gap: SPACING.md,
-  },
-  alert: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    ...SHADOWS.sm,
-  },
-  alertDanger: {
-    backgroundColor: COLORS.dangerLight + '30',
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.danger,
-  },
-  alertWarning: {
-    backgroundColor: COLORS.warningLight + '30',
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warning,
-  },
-  alertIcon: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    marginRight: SPACING.md,
-  },
-  alertText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray900,
-    flex: 1,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
-    ...SHADOWS.sm,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray900,
-  },
-  searchIcon: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-  },
-  clearButton: {
-    padding: SPACING.sm,
-  },
-  clearText: {
-    color: COLORS.gray400,
-    fontSize: TYPOGRAPHY.sizes.lg,
-  },
-  inventoryList: {
-    marginBottom: SPACING.lg,
-  },
-  listHeader: {
-    paddingBottom: SPACING.md,
-    marginBottom: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
-  },
-  listHeaderText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray600,
-  },
-  inventoryItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    ...SHADOWS.sm,
-  },
-  productInfo: {
-    flex: 1,
-  },
-  productName: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  productSku: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray500,
-    marginTop: SPACING.xs,
-  },
-  stockInfo: {
-    flexDirection: 'row',
-    gap: SPACING.lg,
-    alignItems: 'center',
-  },
-  stockColumn: {
-    alignItems: 'center',
-  },
-  stockLabel: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray500,
-    marginBottom: SPACING.xs,
-  },
-  stockValue: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  stockValueZero: {
-    color: COLORS.danger,
-  },
-  statusLabel: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray500,
-    marginBottom: SPACING.xs,
-  },
-  statusBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  statusInStock: {
-    backgroundColor: COLORS.successLight,
-  },
-  statusOutOfStock: {
-    backgroundColor: COLORS.dangerLight,
-  },
-  statusBadgeText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING['3xl'],
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: SPACING.md,
-  },
-  emptyText: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray500,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: COLORS.black + '60',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: BORDER_RADIUS.lg,
-    borderTopRightRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    paddingBottom: SPACING['2xl'],
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  modalTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  modalCloseText: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    color: COLORS.gray400,
-  },
-  modalProductInfo: {
-    backgroundColor: COLORS.gray50,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.lg,
-  },
-  modalProductName: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  modalProductSku: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.gray600,
-    marginTop: SPACING.xs,
-  },
-  modalInputGroup: {
-    marginBottom: SPACING.lg,
-  },
-  modalLabel: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray700,
-    marginBottom: SPACING.sm,
-  },
-  modalCurrentValue: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray900,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  modalCancelButton: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: COLORS.gray300,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-  },
-  modalCancelButtonText: {
-    color: COLORS.gray600,
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-  },
-  modalSaveButton: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-  },
-  modalSaveButtonText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-  },
+  saveBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.success, justifyContent: 'center', alignItems: 'center' },
+  saveBtnText: { color: COLORS.white, fontSize: 12, fontWeight: '700' },
+
+  emptyState: { alignItems: 'center', paddingVertical: SPACING['3xl'] },
+  emptyText: { fontSize: TYPOGRAPHY.sizes.base, color: COLORS.gray500, marginTop: SPACING.md },
 });

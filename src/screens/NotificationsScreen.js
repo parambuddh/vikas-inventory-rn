@@ -1,271 +1,114 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
+  View, Text, TouchableOpacity, StyleSheet,
+  SafeAreaView, FlatList, Platform, StatusBar,
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
 
-const NotificationItem = ({ notification, onPress, onMarkAsRead }) => {
-  const getIcon = () => {
-    switch (notification.type) {
-      case 'order':
-        return '📦';
-      case 'stock':
-        return '⚠️';
-      case 'inventory':
-        return '📊';
-      default:
-        return '🔔';
-    }
-  };
+const notifConfig = {
+  order: { icon: '📦', color: COLORS.primary, bg: '#EEF2FF' },
+  stock: { icon: '⚠️', color: COLORS.warning, bg: COLORS.warningLight },
+  system: { icon: '🔔', color: COLORS.gray600, bg: COLORS.backgroundAlt },
+};
 
-  const getColor = () => {
-    switch (notification.type) {
-      case 'order':
-        return COLORS.primary;
-      case 'stock':
-        return COLORS.danger;
-      case 'inventory':
-        return COLORS.warning;
-      default:
-        return COLORS.gray500;
-    }
-  };
+const NotificationItem = ({ notification, onPress }) => {
+  const config = notifConfig[notification.type] || notifConfig.system;
+  const isUnread = !notification.read;
 
   return (
     <TouchableOpacity
-      style={[
-        styles.notificationItem,
-        !notification.read && styles.notificationItemUnread,
-      ]}
-      onPress={() => !notification.read && onMarkAsRead(notification.id)}
+      style={[styles.notifCard, isUnread && styles.notifUnread]}
+      onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={[styles.notificationIcon, { color: getColor() }]}>
-        {getIcon()}
-      </Text>
-      
-      <View style={styles.notificationContent}>
-        <Text
-          style={[
-            styles.notificationMessage,
-            !notification.read && styles.notificationMessageBold,
-          ]}
-        >
-          {notification.message}
-        </Text>
-        <Text style={styles.notificationDate}>{notification.date}</Text>
+      <View style={[styles.notifIcon, { backgroundColor: config.bg }]}>
+        <Text style={styles.notifIconText}>{config.icon}</Text>
       </View>
-
-      {!notification.read && (
-        <View style={styles.unreadIndicator}>
-          <View style={styles.unreadDot} />
+      <View style={styles.notifContent}>
+        <View style={styles.notifHeader}>
+          <Text style={[styles.notifTitle, isUnread && styles.notifTitleUnread]}>{notification.title}</Text>
+          {isUnread && <View style={styles.unreadDot} />}
         </View>
-      )}
+        <Text style={styles.notifMessage} numberOfLines={2}>{notification.message}</Text>
+        <Text style={styles.notifDate}>{notification.date}</Text>
+      </View>
     </TouchableOpacity>
   );
 };
 
 export const NotificationsScreen = ({ navigation }) => {
   const { appState, markNotificationAsRead } = useContext(AppContext);
-
-  const sortedNotifications = useMemo(() => {
-    return [...appState.notifications].sort(
-      (a, b) => new Date(b.date) - new Date(a.date)
-    );
-  }, [appState.notifications]);
-
-  const unreadCount = sortedNotifications.filter(n => !n.read).length;
+  const unreadCount = appState.notifications.filter(n => !n.read).length;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        {unreadCount > 0 && (
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>{unreadCount}</Text>
-          </View>
-        )}
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          {unreadCount > 0 && <Text style={styles.headerCount}>{unreadCount} unread</Text>}
+        </View>
+        <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
-        style={styles.content}
+      <FlatList
+        data={appState.notifications}
+        keyExtractor={item => String(item.id)}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-      >
-        {sortedNotifications.length > 0 ? (
-          <>
-            {/* Unread Notifications */}
-            {unreadCount > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Unread ({unreadCount})</Text>
-                <FlatList
-                  data={sortedNotifications.filter(n => !n.read)}
-                  keyExtractor={item => item.id.toString()}
-                  renderItem={({ item }) => (
-                    <NotificationItem
-                      notification={item}
-                      onMarkAsRead={markNotificationAsRead}
-                    />
-                  )}
-                  scrollEnabled={false}
-                />
-              </>
-            )}
-
-            {/* Read Notifications */}
-            {sortedNotifications.filter(n => n.read).length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>
-                  Earlier ({sortedNotifications.filter(n => n.read).length})
-                </Text>
-                <FlatList
-                  data={sortedNotifications.filter(n => n.read)}
-                  keyExtractor={item => item.id.toString()}
-                  renderItem={({ item }) => (
-                    <NotificationItem
-                      notification={item}
-                      onMarkAsRead={markNotificationAsRead}
-                    />
-                  )}
-                  scrollEnabled={false}
-                />
-              </>
-            )}
-          </>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🔔</Text>
-            <Text style={styles.emptyText}>No notifications yet</Text>
-          </View>
+        renderItem={({ item }) => (
+          <NotificationItem
+            notification={item}
+            onPress={() => markNotificationAsRead(item.id)}
+          />
         )}
-      </ScrollView>
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🔔</Text>
+            <Text style={styles.emptyText}>No notifications</Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundAlt,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
   header: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
+    backgroundColor: COLORS.white, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + SPACING.md : SPACING.xl,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  backButton: {
-    paddingHorizontal: SPACING.sm,
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.backgroundAlt, justifyContent: 'center', alignItems: 'center' },
+  backText: { fontSize: 18, fontWeight: '600', color: COLORS.gray900 },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', color: COLORS.gray900 },
+  headerCount: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.primary, fontWeight: '600', marginTop: 2 },
+
+  list: { padding: SPACING.lg },
+
+  notifCard: {
+    flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg, marginBottom: SPACING.sm, ...SHADOWS.sm,
   },
-  backText: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.gray900,
-    flex: 1,
-    textAlign: 'center',
-  },
-  badgeContainer: {
-    backgroundColor: COLORS.danger,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
-    padding: SPACING.lg,
-  },
-  sectionTitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray600,
-    marginBottom: SPACING.md,
-    marginTop: SPACING.lg,
-  },
-  notificationItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    ...SHADOWS.sm,
-  },
-  notificationItemUnread: {
-    backgroundColor: COLORS.primaryLight + '10',
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  notificationIcon: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    marginRight: SPACING.md,
-    marginTop: SPACING.xs,
-  },
-  notificationContent: {
-    flex: 1,
-  },
-  notificationMessage: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray700,
-    lineHeight: 20,
-  },
-  notificationMessageBold: {
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  notificationDate: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray500,
-    marginTop: SPACING.xs,
-  },
-  unreadIndicator: {
-    marginLeft: SPACING.md,
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.primary,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING['3xl'],
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: SPACING.md,
-  },
-  emptyText: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray500,
-  },
+  notifUnread: { borderLeftWidth: 3, borderLeftColor: COLORS.primary },
+  notifIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
+  notifIconText: { fontSize: 18 },
+  notifContent: { flex: 1 },
+  notifHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  notifTitle: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '500', color: COLORS.gray700 },
+  notifTitleUnread: { fontWeight: '700', color: COLORS.gray900 },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
+  notifMessage: { fontSize: TYPOGRAPHY.sizes.sm, color: COLORS.gray600, marginTop: SPACING.xs, lineHeight: 18 },
+  notifDate: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400, marginTop: SPACING.sm },
+
+  emptyState: { alignItems: 'center', paddingVertical: SPACING['3xl'] },
+  emptyIcon: { fontSize: 48, marginBottom: SPACING.md },
+  emptyText: { fontSize: TYPOGRAPHY.sizes.base, color: COLORS.gray500 },
 });

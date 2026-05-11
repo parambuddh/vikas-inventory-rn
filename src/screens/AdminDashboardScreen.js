@@ -1,54 +1,58 @@
 import React, { useContext, useMemo } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  SafeAreaView, Platform, StatusBar,
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
 
-const MetricCard = ({ title, value, icon, color }) => (
-  <View style={[styles.metricCard, { borderTopColor: color }]}>
-    <Text style={styles.metricIcon}>{icon}</Text>
+const MetricCard = ({ title, value, icon, color, bgColor }) => (
+  <View style={[styles.metricCard, { backgroundColor: bgColor }]}>
+    <View style={styles.metricTop}>
+      <Text style={styles.metricIcon}>{icon}</Text>
+      <Text style={[styles.metricValue, { color }]}>{value}</Text>
+    </View>
     <Text style={styles.metricTitle}>{title}</Text>
-    <Text style={[styles.metricValue, { color }]}>{value}</Text>
   </View>
 );
 
-const RecentOrderCard = ({ order, onPress }) => (
-  <TouchableOpacity
-    style={styles.recentOrderCard}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <View style={styles.recentOrderHeader}>
-      <View>
-        <Text style={styles.recentOrderId}>{order.id}</Text>
-        <Text style={styles.recentOrderCustomer}>{order.customerName}</Text>
+const LiveOrderCard = ({ order, onPress }) => {
+  const statusConfig = {
+    pending: { color: COLORS.warning, bg: COLORS.warningLight, label: '⏳ Pending' },
+    confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: '✓ Confirmed' },
+    dispatched: { color: COLORS.secondary, bg: '#EDE9FE', label: '🚚 Dispatched' },
+    delivered: { color: COLORS.success, bg: COLORS.successLight, label: '✅ Delivered' },
+  };
+  const status = statusConfig[order.status] || statusConfig.pending;
+  const isNew = order.status === 'pending';
+
+  return (
+    <TouchableOpacity
+      style={[styles.liveOrderCard, isNew && styles.liveOrderNew]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {isNew && <View style={styles.newPulse}><Text style={styles.newPulseText}>NEW</Text></View>}
+      <View style={styles.liveOrderHeader}>
+        <View>
+          <Text style={styles.liveOrderId}>{order.id}</Text>
+          <Text style={styles.liveOrderSalesman}>by {order.salesmanName}</Text>
+        </View>
+        <View style={[styles.liveOrderBadge, { backgroundColor: status.bg }]}>
+          <Text style={[styles.liveOrderBadgeText, { color: status.color }]}>{status.label}</Text>
+        </View>
       </View>
-      <View
-        style={[
-          styles.recentOrderBadge,
-          order.status === 'completed'
-            ? styles.recentOrderBadgeCompleted
-            : styles.recentOrderBadgePending,
-        ]}
-      >
-        <Text style={styles.recentOrderBadgeText}>
-          {order.status === 'completed' ? '✓' : '⏳'}
-        </Text>
+      <View style={styles.liveOrderBody}>
+        <Text style={styles.liveOrderCustomer}>🏢 {order.customerName}</Text>
+        <Text style={styles.liveOrderAmount}>₹{order.total.toLocaleString('en-IN')}</Text>
       </View>
-    </View>
-    <View style={styles.recentOrderFooter}>
-      <Text style={styles.recentOrderDate}>{order.date}</Text>
-      <Text style={styles.recentOrderAmount}>₹{order.total.toLocaleString('en-IN')}</Text>
-    </View>
-  </TouchableOpacity>
-);
+      <View style={styles.liveOrderFooter}>
+        <Text style={styles.liveOrderDate}>{order.date}</Text>
+        <Text style={styles.liveOrderItems}>{order.items.length} items</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export const AdminDashboardScreen = ({ navigation }) => {
   const { appState, handleLogout } = useContext(AppContext);
@@ -56,145 +60,139 @@ export const AdminDashboardScreen = ({ navigation }) => {
   const metrics = useMemo(() => {
     const totalOrders = appState.orders.length;
     const totalRevenue = appState.orders.reduce((sum, order) => sum + order.total, 0);
-    const completedOrders = appState.orders.filter(o => o.status === 'completed').length;
+    const pendingOrders = appState.orders.filter(o => o.status === 'pending').length;
     const lowStockProducts = appState.products.filter(p => p.stock < 50).length;
 
     return [
-      { title: 'Total Orders', value: totalOrders, icon: '📦', color: COLORS.primary },
-      { title: 'Revenue', value: `₹${(totalRevenue / 100000).toFixed(1)}L`, icon: '💰', color: COLORS.success },
-      { title: 'Completed', value: completedOrders, icon: '✓', color: COLORS.successDark },
-      { title: 'Low Stock', value: lowStockProducts, icon: '⚠️', color: COLORS.warning },
+      { title: 'Total Orders', value: totalOrders, icon: '📦', color: COLORS.primary, bgColor: '#EEF2FF' },
+      { title: 'Revenue', value: `₹${(totalRevenue / 100000).toFixed(1)}L`, icon: '💰', color: COLORS.success, bgColor: '#ECFDF5' },
+      { title: 'Pending', value: pendingOrders, icon: '⏳', color: COLORS.warning, bgColor: '#FFFBEB' },
+      { title: 'Low Stock', value: lowStockProducts, icon: '⚠️', color: COLORS.danger, bgColor: '#FEF2F2' },
     ];
   }, [appState.orders, appState.products]);
 
-  const recentOrders = appState.orders.slice(0, 5);
-  const pendingTasks = appState.tasks.filter(t => t.status === 'pending').length;
   const unreadNotifications = appState.notifications.filter(n => !n.read).length;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.userName}>{appState.currentUser?.name}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={() => {
-            handleLogout();
-          }}
-        >
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Metrics Grid */}
-        <View style={styles.metricsSection}>
-          <Text style={styles.sectionTitle}>Dashboard</Text>
-          <View style={styles.metricsGrid}>
-            {metrics.map((metric, index) => (
-              <MetricCard key={index} {...metric} />
-            ))}
-          </View>
-        </View>
-
-        {/* Alerts Section */}
-        {(pendingTasks > 0 || unreadNotifications > 0) && (
-          <View style={styles.alertsSection}>
-            <View style={styles.alertRow}>
-              {pendingTasks > 0 && (
-                <TouchableOpacity
-                  style={[styles.alertCard, styles.alertWarning]}
-                  onPress={() => navigation.navigate('Tasks')}
-                >
-                  <Text style={styles.alertIcon}>📋</Text>
-                  <Text style={styles.alertText}>{pendingTasks} Pending Tasks</Text>
-                </TouchableOpacity>
-              )}
-              {unreadNotifications > 0 && (
-                <TouchableOpacity
-                  style={[styles.alertCard, styles.alertNotification]}
-                  onPress={() => navigation.navigate('Notifications')}
-                >
-                  <Text style={styles.alertIcon}>🔔</Text>
-                  <Text style={styles.alertText}>{unreadNotifications} Notifications</Text>
-                </TouchableOpacity>
-              )}
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+        {/* Header INSIDE to handle stacking correctly */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.greeting}>Admin Panel</Text>
+              <Text style={styles.userName}>{appState.currentUser?.name}</Text>
+            </View>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.notifBtn}
+                onPress={() => navigation.navigate('Notifications')}
+              >
+                <Text style={styles.notifIcon}>🔔</Text>
+                {unreadNotifications > 0 && (
+                  <View style={styles.notifBadge}>
+                    <Text style={styles.notifBadgeText}>{unreadNotifications}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+                <Text style={styles.logoutText}>Logout</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        )}
-
-        {/* Recent Orders */}
-        <View style={styles.ordersSection}>
-          <View style={styles.ordersSectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Orders</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('AdminOrders')}
-            >
-              <Text style={styles.viewAllText}>View All →</Text>
-            </TouchableOpacity>
-          </View>
-
-          {recentOrders.length > 0 ? (
-            <FlatList
-              data={recentOrders}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => (
-                <RecentOrderCard
-                  order={item}
-                  onPress={() =>
-                    navigation.navigate('OrderDetails', { orderId: item.id })
-                  }
-                />
-              )}
-              scrollEnabled={false}
-            />
-          ) : (
-            <Text style={styles.emptyText}>No orders yet</Text>
-          )}
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.actionsSection}>
+        <View style={styles.content}>
+          {/* Metrics flow properly now */}
+          <View style={styles.metricsRow}>
+            {metrics.map((m, i) => <MetricCard key={i} {...m} />)}
+          </View>
+
+          {/* Real-Time Order Feed */}
+          <View style={styles.feedSection}>
+            <View style={styles.feedHeader}>
+              <View style={styles.feedTitleRow}>
+                <View style={styles.liveDot} />
+                <Text style={styles.feedTitle}>Live Order Feed</Text>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate('AdminOrders')}>
+                <Text style={styles.viewAllText}>View All →</Text>
+              </TouchableOpacity>
+            </View>
+
+            {appState.orders.slice(0, 5).map(order => (
+              <LiveOrderCard
+                key={order.id}
+                order={order}
+                onPress={() => navigation.navigate('OrderDetails', { orderId: order.id })}
+              />
+            ))}
+          </View>
+
+          {/* Management */}
           <Text style={styles.sectionTitle}>Management</Text>
 
           <TouchableOpacity
-            style={styles.actionButton}
+            style={styles.mgmtCard}
             onPress={() => navigation.navigate('InventoryManagement')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.actionIcon}>📦</Text>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Inventory Management</Text>
-              <Text style={styles.actionSubtext}>Update stock levels</Text>
+            <View style={[styles.mgmtIcon, { backgroundColor: '#EEF2FF' }]}>
+              <Text style={styles.mgmtIconText}>📦</Text>
             </View>
+            <View style={styles.mgmtInfo}>
+              <Text style={styles.mgmtTitle}>Inventory Management</Text>
+              <Text style={styles.mgmtSubtitle}>Manage products, stock & prices</Text>
+            </View>
+            <Text style={styles.mgmtArrow}>→</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionButton}
+            style={styles.mgmtCard}
+            onPress={() => navigation.navigate('Analytics')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.mgmtIcon, { backgroundColor: '#ECFDF5' }]}>
+              <Text style={styles.mgmtIconText}>📊</Text>
+            </View>
+            <View style={styles.mgmtInfo}>
+              <Text style={styles.mgmtTitle}>Analytics & Reports</Text>
+              <Text style={styles.mgmtSubtitle}>Product sales & individual totals</Text>
+            </View>
+            <Text style={styles.mgmtArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.mgmtCard}
+            onPress={() => navigation.navigate('SalesmenManagement')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.mgmtIcon, { backgroundColor: '#F5F3FF' }]}>
+              <Text style={styles.mgmtIconText}>👥</Text>
+            </View>
+            <View style={styles.mgmtInfo}>
+              <Text style={styles.mgmtTitle}>Team Management</Text>
+              <Text style={styles.mgmtSubtitle}>Add or remove salesmen access</Text>
+            </View>
+            <Text style={styles.mgmtArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.mgmtCard}
             onPress={() => navigation.navigate('Notifications')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.actionIcon}>🔔</Text>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Notifications</Text>
-              <Text style={styles.actionSubtext}>{unreadNotifications} unread</Text>
+            <View style={[styles.mgmtIcon, { backgroundColor: '#FEF3C7' }]}>
+              <Text style={styles.mgmtIconText}>🔔</Text>
             </View>
+            <View style={styles.mgmtInfo}>
+              <Text style={styles.mgmtTitle}>Notifications</Text>
+              <Text style={styles.mgmtSubtitle}>{unreadNotifications} unread alerts</Text>
+            </View>
+            <Text style={styles.mgmtArrow}>→</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('Tasks')}
-          >
-            <Text style={styles.actionIcon}>✓</Text>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Tasks</Text>
-              <Text style={styles.actionSubtext}>{pendingTasks} pending</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={{ height: 40 }} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -202,221 +200,113 @@ export const AdminDashboardScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundAlt,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
+  // Header
   header: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + SPACING.lg : SPACING['3xl'],
+    paddingBottom: SPACING['3xl'] + SPACING.lg, // Extra depth for cleaner overlap float
+    borderBottomLeftRadius: BORDER_RADIUS.xl,
+    borderBottomRightRadius: BORDER_RADIUS.xl,
   },
-  greeting: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.gray500,
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  greeting: { fontSize: TYPOGRAPHY.sizes.sm, color: 'rgba(255,255,255,0.7)' },
+  userName: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: '700', color: COLORS.white, marginTop: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  notifBtn: { position: 'relative', padding: SPACING.sm },
+  notifIcon: { fontSize: 22 },
+  notifBadge: {
+    position: 'absolute', top: 0, right: 0,
+    backgroundColor: COLORS.danger, width: 18, height: 18,
+    borderRadius: 9, justifyContent: 'center', alignItems: 'center',
   },
-  userName: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.gray900,
+  notifBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '700' },
+  logoutBtn: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full,
   },
-  logoutButton: {
-    backgroundColor: COLORS.danger,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  logoutText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    padding: SPACING.lg,
-  },
-  sectionTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.gray900,
-    marginBottom: SPACING.md,
-  },
-  metricsSection: {
-    marginBottom: SPACING['2xl'],
-  },
-  metricsGrid: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.md,
-    justifyContent: 'space-between',
+  logoutText: { color: COLORS.white, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
+
+  content: { flex: 1, paddingHorizontal: SPACING.lg },
+
+  // Metrics
+  metricsRow: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm,
+    marginTop: -SPACING['3xl'], marginBottom: SPACING.xl,
+    zIndex: 10,
   },
   metricCard: {
-    backgroundColor: COLORS.white,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    borderTopWidth: 4,
-    width: '48%',
+    width: '48%', padding: SPACING.md, borderRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.md, elevation: 5,
+  },
+  metricTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.xs },
+  metricIcon: { fontSize: 20 },
+  metricValue: { fontSize: TYPOGRAPHY.sizes.xl, fontWeight: '800' },
+  metricTitle: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '500', color: COLORS.gray500 },
+
+  // Feed
+  feedSection: { marginBottom: SPACING.xl },
+  feedHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
+  feedTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success },
+  feedTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', color: COLORS.gray900 },
+  viewAllText: { color: COLORS.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
+
+  liveOrderCard: {
+    backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg, marginBottom: SPACING.sm,
+    borderLeftWidth: 3, borderLeftColor: COLORS.border,
     ...SHADOWS.sm,
   },
-  metricIcon: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    marginBottom: SPACING.xs,
+  liveOrderNew: { borderLeftColor: COLORS.primary, backgroundColor: '#FAFAFE' },
+  newPulse: {
+    position: 'absolute', top: SPACING.sm, right: SPACING.sm,
+    backgroundColor: COLORS.primary, paddingHorizontal: SPACING.sm, paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
   },
-  metricTitle: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray600,
-    marginBottom: SPACING.xs,
-    fontWeight: '500',
+  newPulseText: { color: COLORS.white, fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+
+  liveOrderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  liveOrderId: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700', color: COLORS.gray900 },
+  liveOrderSalesman: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, marginTop: 2 },
+  liveOrderBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full },
+  liveOrderBadgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600' },
+
+  liveOrderBody: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginTop: SPACING.md, paddingTop: SPACING.sm,
+    borderTopWidth: 1, borderTopColor: COLORS.divider,
   },
-  metricValue: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '700',
+  liveOrderCustomer: { fontSize: TYPOGRAPHY.sizes.sm, color: COLORS.gray700, fontWeight: '500' },
+  liveOrderAmount: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '800', color: COLORS.primary },
+
+  liveOrderFooter: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    marginTop: SPACING.sm,
   },
-  alertsSection: {
-    marginBottom: SPACING.lg,
-  },
-  alertRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  alertCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+  liveOrderDate: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400 },
+  liveOrderItems: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400 },
+
+  // Section
+  sectionTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', color: COLORS.gray900, marginBottom: SPACING.md },
+
+  // Management
+  mgmtCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.white, padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg, marginBottom: SPACING.sm,
     ...SHADOWS.sm,
   },
-  alertWarning: {
-    backgroundColor: COLORS.warningLight + '30',
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warning,
+  mgmtIcon: {
+    width: 44, height: 44, borderRadius: BORDER_RADIUS.md,
+    justifyContent: 'center', alignItems: 'center',
   },
-  alertNotification: {
-    backgroundColor: COLORS.primaryLight + '30',
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  alertIcon: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    marginRight: SPACING.sm,
-  },
-  alertText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  ordersSection: {
-    marginBottom: SPACING['2xl'],
-  },
-  ordersSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  viewAllText: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-  },
-  recentOrderCard: {
-    backgroundColor: COLORS.white,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
-    ...SHADOWS.sm,
-  },
-  recentOrderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  recentOrderId: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  recentOrderCustomer: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray600,
-    marginTop: SPACING.xs,
-  },
-  recentOrderBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recentOrderBadgeCompleted: {
-    backgroundColor: COLORS.successLight,
-  },
-  recentOrderBadgePending: {
-    backgroundColor: COLORS.warningLight,
-  },
-  recentOrderBadgeText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: 'bold',
-  },
-  recentOrderFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
-  },
-  recentOrderDate: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray500,
-  },
-  recentOrderAmount: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: COLORS.gray500,
-    fontSize: TYPOGRAPHY.sizes.base,
-    paddingVertical: SPACING.lg,
-  },
-  actionsSection: {
-    marginBottom: SPACING['2xl'],
-  },
-  actionButton: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-    ...SHADOWS.sm,
-  },
-  actionIcon: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    marginRight: SPACING.md,
-  },
-  actionContent: {
-    flex: 1,
-  },
-  actionTitle: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  actionSubtext: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray500,
-    marginTop: 2,
-  },
+  mgmtIconText: { fontSize: 22 },
+  mgmtInfo: { flex: 1, marginLeft: SPACING.md },
+  mgmtTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600', color: COLORS.gray900 },
+  mgmtSubtitle: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, marginTop: 2 },
+  mgmtArrow: { fontSize: TYPOGRAPHY.sizes.lg, color: COLORS.gray400 },
 });

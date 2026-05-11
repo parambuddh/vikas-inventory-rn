@@ -8,6 +8,8 @@ import {
   StyleSheet,
   SafeAreaView,
   FlatList,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
@@ -24,7 +26,7 @@ const CustomerCard = ({ customer, onPress, isSelected }) => (
     <View style={styles.customerCardHeader}>
       <View style={styles.customerInfo}>
         <Text style={styles.customerName}>{customer.name}</Text>
-        <Text style={styles.customerCity}>{customer.city}</Text>
+        <Text style={styles.customerCity}>📍 {customer.city}</Text>
       </View>
       {isSelected && (
         <View style={styles.selectedCheckmark}>
@@ -39,8 +41,8 @@ const CustomerCard = ({ customer, onPress, isSelected }) => (
         <Text style={styles.detailValue}>{customer.totalOrders}</Text>
       </View>
       <View style={styles.detailItem}>
-        <Text style={styles.detailLabel}>Credit</Text>
-        <Text style={styles.detailValue}>₹{(customer.creditLimit / 100000).toFixed(1)}L</Text>
+        <Text style={styles.detailLabel}>City</Text>
+        <Text style={styles.detailValue}>{customer.city}</Text>
       </View>
       <View style={styles.detailItem}>
         <Text style={styles.detailLabel}>Phone</Text>
@@ -72,7 +74,11 @@ export const CustomerSelectScreen = ({ navigation }) => {
 
   const handleProceed = () => {
     if (selectedCustomerId) {
-      navigation.navigate('ProductListing');
+      try {
+        navigation.navigate('ProductListing');
+      } catch (e) {
+        alert("Navigation Error: " + e.message);
+      }
     }
   };
 
@@ -150,6 +156,10 @@ export const CustomerSelectScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       )}
+      {/* Add Customer FAB */}
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+        <Text style={styles.fabText}>+ Add Customer</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -163,6 +173,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + SPACING.md : SPACING.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -243,6 +254,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray900,
   },
+  customerGst: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.primary,
+    marginTop: 2,
+    fontWeight: '500',
+  },
   customerCity: {
     fontSize: TYPOGRAPHY.sizes.xs,
     color: COLORS.gray500,
@@ -314,4 +331,11 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.base,
     fontWeight: '600',
   },
+  fab: {
+    position: 'absolute', bottom: 90, right: SPACING.lg,
+    backgroundColor: COLORS.primary, paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md, borderRadius: BORDER_RADIUS.full,
+    ...SHADOWS.lg,
+  },
+  fabText: { color: COLORS.white, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700' },
 });

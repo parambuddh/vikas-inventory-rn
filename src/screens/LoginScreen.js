@@ -1,14 +1,7 @@
 import React, { useState, useContext } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  SafeAreaView,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  KeyboardAvoidingView, Platform, ScrollView, SafeAreaView,
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
@@ -19,37 +12,25 @@ export const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLoginPress = () => {
     setError('');
-
-    if (!username || !password) {
+    if (!username.trim() || !password.trim()) {
       setError('Please enter username and password');
       return;
     }
-
-    if (handleLogin(username, password)) {
-      setUsername('');
-      setPassword('');
-      // Navigation will be handled by the main App component
-    } else {
-      setError('Invalid username or password');
-    }
-  };
-
-  const handleDemoLogin = (role) => {
-    setError('');
-    const credentials = {
-      salesman: { username: 'salesman', password: '1234' },
-      admin: { username: 'admin', password: '1234' },
-    };
-
-    if (handleLogin(credentials[role].username, credentials[role].password)) {
-      setUsername('');
-      setPassword('');
-    } else {
-      setError('Login failed');
-    }
+    setIsLoading(true);
+    // Simulate API delay
+    setTimeout(() => {
+      if (handleLogin(username.trim(), password)) {
+        setUsername('');
+        setPassword('');
+      } else {
+        setError('Invalid username or password');
+      }
+      setIsLoading(false);
+    }, 500);
   };
 
   return (
@@ -58,93 +39,97 @@ export const LoginScreen = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Vikas Marketing</Text>
-            <Text style={styles.subtitle}>Inventory & Sales Management</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Brand Header */}
+          <View style={styles.brandSection}>
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoIcon}>📦</Text>
+            </View>
+            <Text style={styles.brandName}>Vikas Marketing</Text>
+            <Text style={styles.brandTagline}>Enterprise Sales Platform</Text>
           </View>
 
-          {/* Login Form */}
-          <View style={styles.formContainer}>
-            {/* Username Input */}
+          {/* Login Card */}
+          <View style={styles.loginCard}>
+            <Text style={styles.cardTitle}>Welcome back</Text>
+            <Text style={styles.cardSubtitle}>Sign in to your account</Text>
+
+            {/* Username */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Username</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter username"
-                value={username}
-                onChangeText={setUsername}
-                placeholderTextColor={COLORS.gray400}
-              />
+              <View style={[styles.inputWrap, error && !username && styles.inputError]}>
+                <Text style={styles.inputIcon}>👤</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your username"
+                  value={username}
+                  onChangeText={(val) => { setUsername(val); setError(''); }}
+                  placeholderTextColor={COLORS.gray400}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             </View>
 
-            {/* Password Input */}
+            {/* Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
+              <View style={[styles.inputWrap, error && !password && styles.inputError]}>
+                <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Enter password"
+                  style={styles.input}
+                  placeholder="Enter your password"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(val) => { setPassword(val); setError(''); }}
                   secureTextEntry={!showPassword}
                   placeholderTextColor={COLORS.gray400}
                 />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                  <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Error Message */}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {/* Error */}
+            {error ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>⚠️ {error}</Text>
+              </View>
+            ) : null}
 
             {/* Login Button */}
             <TouchableOpacity
-              style={styles.loginButton}
+              style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]}
               onPress={handleLoginPress}
+              disabled={isLoading}
+              activeOpacity={0.8}
             >
-              <Text style={styles.loginButtonText}>Login</Text>
+              <Text style={styles.loginBtnText}>{isLoading ? 'Signing in...' : 'Sign In'}</Text>
             </TouchableOpacity>
+          </View>
 
-            {/* Demo Logins */}
-            <View style={styles.demoSection}>
-              <Text style={styles.demoTitle}>Demo Accounts</Text>
+          {/* Demo Section (remove in production) */}
+          <View style={styles.demoSection}>
+            <Text style={styles.demoTitle}>Quick Demo Access</Text>
+            <View style={styles.demoRow}>
               <TouchableOpacity
-                style={[styles.demoButton, styles.salesmanButton]}
-                onPress={() => handleDemoLogin('salesman')}
+                style={styles.demoBtn}
+                onPress={() => { handleLogin('salesman', '1234'); }}
               >
-                <Text style={styles.demoButtonText}>👤 Salesman</Text>
-                <Text style={styles.demoButtonSubtext}>Demo Login</Text>
+                <Text style={styles.demoBtnIcon}>👤</Text>
+                <Text style={styles.demoBtnLabel}>Salesman</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[styles.demoButton, styles.adminButton]}
-                onPress={() => handleDemoLogin('admin')}
+                style={[styles.demoBtn, styles.demoBtnAdmin]}
+                onPress={() => { handleLogin('admin', '1234'); }}
               >
-                <Text style={styles.demoButtonText}>👨‍💼 Admin</Text>
-                <Text style={styles.demoButtonSubtext}>Demo Login</Text>
+                <Text style={styles.demoBtnIcon}>👨‍💼</Text>
+                <Text style={styles.demoBtnLabel}>Admin</Text>
               </TouchableOpacity>
-            </View>
-
-            {/* Credentials Info */}
-            <View style={styles.infoBox}>
-              <Text style={styles.infoTitle}>Demo Credentials</Text>
-              <Text style={styles.infoText}>
-                Salesman: salesman / 1234
-              </Text>
-              <Text style={styles.infoText}>
-                Admin: admin / 1234
-              </Text>
             </View>
           </View>
+
+          <Text style={styles.footerText}>Powered by Param Buddh & Jigar Maru</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -152,146 +137,71 @@ export const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  container: { flex: 1, backgroundColor: COLORS.primary },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: SPACING.xl },
+
+  // Brand
+  brandSection: { alignItems: 'center', marginBottom: SPACING['2xl'] },
+  logoCircle: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.lg,
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: SPACING.lg,
+  logoIcon: { fontSize: 36 },
+  brandName: { fontSize: TYPOGRAPHY.sizes['3xl'], fontWeight: '800', color: COLORS.white, letterSpacing: -0.5 },
+  brandTagline: { fontSize: TYPOGRAPHY.sizes.sm, color: 'rgba(255,255,255,0.6)', marginTop: SPACING.xs, fontWeight: '500' },
+
+  // Login Card
+  loginCard: {
+    backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl, ...SHADOWS.lg,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: SPACING['3xl'],
+  cardTitle: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: '700', color: COLORS.gray900 },
+  cardSubtitle: { fontSize: TYPOGRAPHY.sizes.sm, color: COLORS.gray500, marginTop: SPACING.xs, marginBottom: SPACING.xl },
+
+  // Inputs
+  inputGroup: { marginBottom: SPACING.lg },
+  label: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', color: COLORS.gray700, marginBottom: SPACING.sm },
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.gray50, borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1.5, borderColor: COLORS.border, paddingHorizontal: SPACING.md,
   },
-  title: {
-    fontSize: TYPOGRAPHY.sizes['3xl'],
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: SPACING.sm,
+  inputError: { borderColor: COLORS.danger },
+  inputIcon: { fontSize: 16, marginRight: SPACING.sm },
+  input: { flex: 1, paddingVertical: SPACING.md, fontSize: TYPOGRAPHY.sizes.base, color: COLORS.gray900 },
+  eyeBtn: { padding: SPACING.sm },
+  eyeText: { fontSize: 18 },
+
+  // Error
+  errorBox: {
+    backgroundColor: COLORS.dangerLight, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md, marginBottom: SPACING.md,
   },
-  subtitle: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray500,
+  errorText: { fontSize: TYPOGRAPHY.sizes.sm, color: COLORS.dangerDark, fontWeight: '500' },
+
+  // Login Button
+  loginBtn: {
+    backgroundColor: COLORS.primary, paddingVertical: SPACING.md + 2,
+    borderRadius: BORDER_RADIUS.md, alignItems: 'center', marginTop: SPACING.sm,
+    ...SHADOWS.colored(COLORS.primary),
   },
-  formContainer: {
-    width: '100%',
+  loginBtnDisabled: { opacity: 0.7 },
+  loginBtnText: { color: COLORS.white, fontSize: TYPOGRAPHY.sizes.base, fontWeight: '700', letterSpacing: 0.3 },
+
+  // Demo
+  demoSection: { marginTop: SPACING.xl, alignItems: 'center' },
+  demoTitle: { fontSize: TYPOGRAPHY.sizes.xs, color: 'rgba(255,255,255,0.5)', fontWeight: '600', marginBottom: SPACING.md, textTransform: 'uppercase', letterSpacing: 1 },
+  demoRow: { flexDirection: 'row', gap: SPACING.md },
+  demoBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md, borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
   },
-  inputGroup: {
-    marginBottom: SPACING.lg,
-  },
-  label: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray700,
-    marginBottom: SPACING.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    fontSize: TYPOGRAPHY.sizes.base,
-    backgroundColor: COLORS.background,
-    color: COLORS.gray900,
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.background,
-  },
-  passwordInput: {
-    flex: 1,
-    padding: SPACING.md,
-    fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.gray900,
-  },
-  eyeIcon: {
-    padding: SPACING.md,
-  },
-  eyeText: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-  },
-  loginButton: {
-    backgroundColor: COLORS.primary,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    marginTop: SPACING.lg,
-    ...SHADOWS.md,
-  },
-  loginButtonText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-  },
-  demoSection: {
-    marginTop: SPACING['2xl'],
-    paddingTop: SPACING['2xl'],
-    borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
-  },
-  demoTitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray600,
-    marginBottom: SPACING.md,
-    textAlign: 'center',
-  },
-  demoButton: {
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  salesmanButton: {
-    backgroundColor: COLORS.secondaryLight,
-    borderWidth: 1,
-    borderColor: COLORS.secondary,
-  },
-  adminButton: {
-    backgroundColor: COLORS.primaryLight,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  demoButtonText: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  demoButtonSubtext: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray100,
-    marginTop: 2,
-  },
-  infoBox: {
-    backgroundColor: COLORS.gray50,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginTop: SPACING.lg,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  infoTitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
-    color: COLORS.gray700,
-    marginBottom: SPACING.sm,
-  },
-  infoText: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.gray600,
-    marginBottom: SPACING.xs,
-    fontFamily: 'monospace',
-  },
-  error: {
-    color: COLORS.danger,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    marginTop: SPACING.sm,
-    paddingHorizontal: SPACING.sm,
-  },
+  demoBtnAdmin: { borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.15)' },
+  demoBtnIcon: { fontSize: 18 },
+  demoBtnLabel: { color: COLORS.white, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
+
+  footerText: { textAlign: 'center', fontSize: TYPOGRAPHY.sizes.xs, color: 'rgba(255,255,255,0.3)', marginTop: SPACING['2xl'] },
 });
