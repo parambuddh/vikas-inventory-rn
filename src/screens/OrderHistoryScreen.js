@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 const STATUS_TABS = ['All', 'Pending', 'Confirmed', 'Dispatched', 'Delivered'];
 
@@ -87,12 +88,16 @@ export const OrderHistoryScreen = ({ navigation }) => {
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-            <Text style={styles.logoutText}>🚪 Logout</Text>
-          </TouchableOpacity>
+          <View style={{ width: 40 }} />
         )}
-        <Text style={styles.headerTitle}>{isAdmin ? 'All Orders' : 'My History'}</Text>
-        <View style={styles.placeholder} />
+        <Text style={styles.headerTitle}>{isAdmin ? 'All Orders' : 'My Order Dashboard'}</Text>
+        {!isAdmin ? (
+          <TouchableOpacity onPress={handleLogout} style={styles.rightLogout}>
+            <Feather name="log-out" size={22} color={COLORS.danger} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <View style={styles.tabsWrap}>
@@ -165,12 +170,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.backgroundAlt, justifyContent: 'center', alignItems: 'center' },
-  backText: { fontSize: 18, fontWeight: '600', color: COLORS.gray900 },
-  logoutBtn: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: BORDER_RADIUS.md, backgroundColor: COLORS.dangerLight },
-  logoutText: { color: COLORS.danger, fontSize: 12, fontWeight: '700' },
-  headerTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', color: COLORS.gray900, flex: 1, textAlign: 'center' },
-  placeholder: { width: 36 },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: COLORS.gray900, flex: 1, textAlign: 'center' },
+  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  backText: { fontSize: 24, color: COLORS.gray700 },
+  rightLogout: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  placeholder: { width: 40 },
 
   tabsWrap: { backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   tabsList: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, gap: SPACING.sm },

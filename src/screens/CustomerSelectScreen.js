@@ -68,19 +68,11 @@ export const CustomerSelectScreen = ({ navigation }) => {
   }, [searchText, appState.customers]);
 
   const handleSelectCustomer = (customer) => {
-    setSelectedCustomerId(customer.id);
     selectCustomer(customer.id);
+    navigation.navigate('ProductListing');
   };
 
-  const handleProceed = () => {
-    if (selectedCustomerId) {
-      try {
-        navigation.navigate('ProductListing');
-      } catch (e) {
-        alert("Navigation Error: " + e.message);
-      }
-    }
-  };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -130,7 +122,7 @@ export const CustomerSelectScreen = ({ navigation }) => {
               <CustomerCard
                 customer={item}
                 onPress={() => handleSelectCustomer(item)}
-                isSelected={selectedCustomerId === item.id}
+                isSelected={false}
               />
             )}
             scrollEnabled={false}
@@ -143,19 +135,7 @@ export const CustomerSelectScreen = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Proceed Button */}
-      {selectedCustomerId && (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.proceedButton}
-            onPress={handleProceed}
-          >
-            <Text style={styles.proceedButtonText}>
-              Continue to Products →
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+
       {/* Add Customer FAB */}
       <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
         <Text style={styles.fabText}>+ Add Customer</Text>
@@ -332,7 +312,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fab: {
-    position: 'absolute', bottom: 90, right: SPACING.lg,
+    position: 'absolute', bottom: 30, right: SPACING.lg,
     backgroundColor: COLORS.primary, paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md, borderRadius: BORDER_RADIUS.full,
     ...SHADOWS.lg,

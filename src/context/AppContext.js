@@ -223,17 +223,19 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- INVENTORY (Admin only) ---
-  const updateStock = (productId, newStock) => {
+  const updateProduct = (productId, updates) => {
     const newProducts = appState.products.map(product =>
       product.id === productId
-        ? { ...product, stock: newStock, inStock: newStock > 0 }
+        ? { ...product, ...updates, inStock: (updates.stock !== undefined ? updates.stock : product.stock) > 0 }
         : product
     );
     const newState = { ...appState, products: newProducts };
     setAppState(newState);
     saveState(newState);
-    showToast('Stock updated', 'success');
   };
+
+  // Legacy mapping for safety
+  const updateStock = (id, stock) => updateProduct(id, { stock });
 
   // --- TEAM MANAGEMENT (Admin only) ---
   const addSalesman = (newUserData) => {
@@ -282,6 +284,7 @@ export const AppProvider = ({ children }) => {
         updateOrderStatus,
         markNotificationAsRead,
         updateStock,
+        updateProduct,
         addSalesman,
         deleteSalesman,
         showToast,

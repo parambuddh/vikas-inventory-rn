@@ -6,9 +6,13 @@ import {
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
 
-const ProductRow = ({ product, onUpdateStock }) => {
+const ProductRow = ({ product, onUpdateProduct }) => {
   const [editing, setEditing] = useState(false);
-  const [stockValue, setStockValue] = useState(String(product.stock));
+  const [form, setForm] = useState({
+    price: String(product.price),
+    maxDiscount: String(product.maxDiscountPercent),
+    stock: String(product.stock)
+  });
 
   const stockStatus = product.stock === 0 ? 'out' : product.stock < 50 ? 'low' : 'ok';
   const stockColors = {
@@ -19,8 +23,20 @@ const ProductRow = ({ product, onUpdateStock }) => {
   const sc = stockColors[stockStatus];
 
   const handleSave = () => {
-    const newStock = parseInt(stockValue) || 0;
-    onUpdateStock(product.id, newStock);
+    onUpdateProduct(product.id, {
+      price: parseFloat(form.price) || product.price,
+      maxDiscountPercent: parseFloat(form.maxDiscount) || product.maxDiscountPercent,
+      stock: parseInt(form.stock) || 0,
+    });
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setForm({
+      price: String(product.price),
+      maxDiscount: String(product.maxDiscountPercent),
+      stock: String(product.stock)
+    });
     setEditing(false);
   };
 
@@ -37,47 +53,76 @@ const ProductRow = ({ product, onUpdateStock }) => {
       </View>
 
       <View style={styles.productBottom}>
-        <View style={styles.infoCol}>
-          <Text style={styles.infoLabel}>Price</Text>
-          <Text style={styles.infoValue}>₹{product.price}</Text>
-        </View>
-        <View style={styles.infoDivider} />
-        <View style={styles.infoCol}>
-          <Text style={styles.infoLabel}>Max Disc.</Text>
-          <Text style={styles.infoValue}>{product.maxDiscountPercent}%</Text>
-        </View>
-        <View style={styles.infoDivider} />
-        <View style={styles.infoCol}>
-          <Text style={styles.infoLabel}>Stock</Text>
-          {editing ? (
-            <View style={styles.stockEditRow}>
-              <TextInput
-                style={styles.stockInput}
-                value={stockValue}
-                onChangeText={setStockValue}
-                keyboardType="number-pad"
-                autoFocus
-                selectTextOnFocus
+        {editing ? (
+          <>
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Price</Text>
+              <TextInput 
+                style={styles.editInput}
+                value={form.price}
+                onChangeText={(t)=>setForm({...form, price:t})}
+                keyboardType="decimal-pad"
               />
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                <Text style={styles.saveBtnText}>✓</Text>
-              </TouchableOpacity>
             </View>
-          ) : (
-            <TouchableOpacity onPress={() => setEditing(true)}>
+            <View style={styles.infoDivider} />
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Max%</Text>
+              <TextInput 
+                style={styles.editInput}
+                value={form.maxDiscount}
+                onChangeText={(t)=>setForm({...form, maxDiscount:t})}
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <View style={styles.infoDivider} />
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Stock</Text>
+              <TextInput 
+                style={styles.editInput}
+                value={form.stock}
+                onChangeText={(t)=>setForm({...form, stock:t})}
+                keyboardType="number-pad"
+              />
+            </View>
+            <View style={styles.actionBlock}>
+               <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+                  <Text style={styles.saveBtnText}>✓</Text>
+               </TouchableOpacity>
+               <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
+                  <Text style={styles.cancelBtnText}>✕</Text>
+               </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Price</Text>
+              <Text style={styles.infoValue}>₹{product.price}</Text>
+            </View>
+            <View style={styles.infoDivider} />
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Max Disc.</Text>
+              <Text style={styles.infoValue}>{product.maxDiscountPercent}%</Text>
+            </View>
+            <View style={styles.infoDivider} />
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>Stock</Text>
               <Text style={[styles.infoValue, { color: sc.color }]}>
-                {product.stock} {product.unit} ✏️
+                {product.stock} {product.unit}
               </Text>
+            </View>
+            <TouchableOpacity style={styles.masterEditBtn} onPress={() => setEditing(true)}>
+              <Text style={{fontSize:16}}>✏️</Text>
             </TouchableOpacity>
-          )}
-        </View>
+          </>
+        )}
       </View>
     </View>
   );
 };
 
 export const InventoryManagementScreen = ({ navigation }) => {
-  const { appState, updateStock } = useContext(AppContext);
+  const { appState, updateProduct } = useContext(AppContext);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // all, low, out
 
@@ -147,7 +192,7 @@ export const InventoryManagementScreen = ({ navigation }) => {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <ProductRow product={item} onUpdateStock={updateStock} />
+          <ProductRow product={item} onUpdateProduct={updateProduct} />
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -218,14 +263,18 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: SPACING.xs },
   infoValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700', color: COLORS.gray900 },
 
-  stockEditRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  stockInput: {
-    width: 60, backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.sm,
-    paddingHorizontal: SPACING.sm, paddingVertical: 2, fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '700', borderWidth: 1, borderColor: COLORS.primary, textAlign: 'center',
+  masterEditBtn: { paddingLeft: SPACING.sm, alignSelf:'center' },
+  actionBlock: { flexDirection: 'row', gap: 6, marginLeft: 6 },
+  editInput: {
+    backgroundColor: COLORS.white, borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: 4, paddingVertical: 2, fontSize: 13,
+    fontWeight: '700', borderWidth: 1, borderColor: COLORS.primary,
+    color: COLORS.gray900, height: 26, width: '90%'
   },
-  saveBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.success, justifyContent: 'center', alignItems: 'center' },
-  saveBtnText: { color: COLORS.white, fontSize: 12, fontWeight: '700' },
+  saveBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.success, justifyContent: 'center', alignItems: 'center' },
+  saveBtnText: { color: COLORS.white, fontSize: 13, fontWeight: '800' },
+  cancelBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.gray400, justifyContent: 'center', alignItems: 'center' },
+  cancelBtnText: { color: COLORS.white, fontSize: 10, fontWeight: '800' },
 
   emptyState: { alignItems: 'center', paddingVertical: SPACING['3xl'] },
   emptyText: { fontSize: TYPOGRAPHY.sizes.base, color: COLORS.gray500, marginTop: SPACING.md },

@@ -6,11 +6,20 @@ import {
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
 
-const CATEGORIES = ['All', 'Cookware', 'Plates', 'Bowls', 'Utensils', 'Serving', 'Storage'];
+
 
 const ProductListItem = ({ product, cartItem, maxDiscount, onUpdateQty, onUpdatePrice }) => {
   const qty = cartItem?.quantity || 0;
   const appliedPrice = cartItem?.appliedPrice || product.price;
+  
+  // Use a local string buffer so typing is seamless and doesn't freeze
+  const [priceText, setPriceText] = useState(String(appliedPrice));
+  
+  // Sync local text if external price changes (like cart resets)
+  React.useEffect(() => {
+    setPriceText(String(appliedPrice));
+  }, [appliedPrice]);
+
   const isDiscounted = appliedPrice < product.price;
   const discountPercent = ((product.price - appliedPrice) / product.price * 100).toFixed(0);
   const hasAdded = qty > 0;
@@ -63,17 +72,19 @@ const ProductListItem = ({ product, cartItem, maxDiscount, onUpdateQty, onUpdate
               <Text style={styles.priceSymbol}>₹</Text>
               <TextInput
                 style={[styles.priceEntry, isDiscounted && styles.priceEntryDiscounted]}
-                value={String(appliedPrice)}
-                onChangeText={(val) => {
-                  const newPrice = parseFloat(val) || 0;
+                value={priceText}
+                onChangeText={setPriceText}
+                onEndEditing={() => {
+                  let numeric = parseFloat(priceText) || product.price;
                   const minPrice = product.price * (1 - maxDiscount / 100);
-                  if (newPrice >= minPrice && newPrice <= product.price) {
-                    onUpdatePrice(product.id, newPrice);
-                  } else if (newPrice > product.price) {
-                    onUpdatePrice(product.id, product.price);
-                  }
+                  // Force clamp to legal values ON BLUR only
+                  if (numeric < minPrice) numeric = minPrice;
+                  if (numeric > product.price) numeric = product.price;
+                  
+                  setPriceText(String(numeric));
+                  onUpdatePrice(product.id, numeric);
                 }}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 selectTextOnFocus
               />
             </View>
@@ -140,17 +151,16 @@ const ProductListItem = ({ product, cartItem, maxDiscount, onUpdateQty, onUpdate
 export const ProductListingScreen = ({ navigation }) => {
   const { appState, addToCart, updateCartQuantity, updateCartPrice } = useContext(AppContext);
   const [search, setSearch] = useState('');
-  const [activeCat, setActiveCat] = useState('All');
+  // Track prices that aren't in cart yet so we preserve edits pre-add
+  const [preCartPrices, setPreCartPrices] = useState({});
 
   try {
     const filtered = useMemo(() => {
       return appState.products.filter(p => {
         if (!p.inStock) return false;
-        const matchesCat = activeCat === 'All' || p.category === activeCat;
-        const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()));
-        return matchesCat && matchesSearch;
+        return p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()));
       });
-    }, [appState.products, search, activeCat]);
+    }, [appState.products, search]);
 
     const cartSummary = useMemo(() => {
       const count = appState.cart.reduce((sum, i) => sum + i.quantity, 0);
@@ -158,19 +168,26 @@ export const ProductListingScreen = ({ navigation }) => {
       return { count, total };
     }, [appState.cart]);
 
-    const handleQty = useCallback((prod, newQty, appliedPrice) => {
+    const handleQty = useCallback((prod, newQty, currentApplied) => {
       const exist = appState.cart.find(x => x.id === prod.id);
+      const priceToUse = currentApplied;
       if (newQty <= 0) {
         updateCartQuantity(prod.id, 0);
       } else {
         if (exist) updateCartQuantity(prod.id, newQty);
-        else addToCart({ ...prod, appliedPrice }, newQty);
+        else addToCart({ ...prod, appliedPrice: priceToUse }, newQty);
       }
     }, [appState.cart, addToCart, updateCartQuantity]);
 
     const handlePrice = useCallback((id, p) => {
-      updateCartPrice(id, p);
-    }, [updateCartPrice]);
+      const inCart = appState.cart.some(c => c.id === id);
+      if (inCart) {
+        updateCartPrice(id, p);
+      } else {
+        // Store in local transient hash map for later inclusion upon 'ADD' click
+        setPreCartPrices(prev => ({ ...prev, [id]: p }));
+      }
+    }, [appState.cart, updateCartPrice]);
 
     return (
       <SafeAreaView style={styles.wrapper}>
@@ -204,24 +221,7 @@ export const ProductListingScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Modern Horizontal Category Pills */}
-        <View style={styles.catStrip}>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={CATEGORIES}
-            keyExtractor={t => t}
-            contentContainerStyle={styles.catScroll}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.catPill, activeCat === item && styles.catPillActive]}
-                onPress={() => setActiveCat(item)}
-              >
-                <Text style={[styles.catPillTxt, activeCat === item && styles.catPillTxtActive]}>{item}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+
 
         {/* Streamlined Flat Product Catalog */}
         <FlatList
@@ -229,15 +229,26 @@ export const ProductListingScreen = ({ navigation }) => {
           keyExtractor={item => String(item.id)}
           contentContainerStyle={styles.catalogList}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <ProductListItem
-              product={item}
-              cartItem={appState.cart.find(c => c.id === item.id)}
-              maxDiscount={15}
-              onUpdateQty={handleQty}
-              onUpdatePrice={handlePrice}
-            />
-          )}
+          renderItem={({ item }) => {
+            const cartItem = appState.cart.find(c => c.id === item.id);
+            // Precedence: Cart Item Applied Price -> Transcient Pre-Cart Price -> Master Product Price
+            const activeDisplayPrice = cartItem?.appliedPrice || preCartPrices[item.id] || item.price;
+            
+            // Re-inject transient appliedPrice into Product for correct default math
+            const productWithApplied = { ...item, price: activeDisplayPrice }; 
+            // Wait, passing directly via customized item instead of mutating root
+            const effectiveProduct = { ...item, appliedPrice: activeDisplayPrice };
+
+            return (
+              <ProductListItem
+                product={effectiveProduct}
+                cartItem={cartItem}
+                maxDiscount={15}
+                onUpdateQty={handleQty}
+                onUpdatePrice={handlePrice}
+              />
+            );
+          }}
           ListEmptyComponent={
             <View style={styles.emptyArea}>
               <Text style={{fontSize: 40, marginBottom: SPACING.md}}>🍽️</Text>
@@ -271,8 +282,8 @@ export const ProductListingScreen = ({ navigation }) => {
       </SafeAreaView>
     );
   } catch (err) {
-    alert("CRASH ERROR: " + err.message);
-    return <View style={{flex:1, justifyContent:'center', alignItems:'center'}}><Text>Crash: {err.message}</Text></View>;
+    console.error(err);
+    return <View style={{flex:1, justifyContent:'center', alignItems:'center'}}><Text>Load error.</Text></View>;
   }
 };
 
@@ -294,7 +305,7 @@ const styles = StyleSheet.create({
   hdrTitle: { fontSize: 17, fontWeight: '700', color: '#0F172A' },
 
   // Search architecture
-  searchStrip: { backgroundColor: '#FFFFFF', paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md },
+  searchStrip: { backgroundColor: '#FFFFFF', paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md, paddingTop: SPACING.md },
   searchPlate: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#F1F5F9', borderRadius: 12,

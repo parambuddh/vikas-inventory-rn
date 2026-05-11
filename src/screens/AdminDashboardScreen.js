@@ -6,6 +6,8 @@ import {
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
 
+import { Feather } from '@expo/vector-icons';
+
 const MetricCard = ({ title, value, icon, color, bgColor }) => (
   <View style={[styles.metricCard, { backgroundColor: bgColor }]}>
     <View style={styles.metricTop}>
@@ -96,7 +98,7 @@ export const AdminDashboardScreen = ({ navigation }) => {
                 )}
               </TouchableOpacity>
               <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                <Text style={styles.logoutText}>Logout</Text>
+                <Feather name="log-out" size={20} color={COLORS.danger} />
               </TouchableOpacity>
             </View>
           </View>
