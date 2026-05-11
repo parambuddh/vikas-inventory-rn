@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 
 
@@ -35,24 +36,13 @@ const ProductListItem = ({ product, cartItem, maxDiscount, onUpdateQty, onUpdate
     ]).start();
   };
 
-  const getIcon = () => {
-    switch(product.category) {
-      case 'Cookware': return '🍳';
-      case 'Plates': return '🍽️';
-      case 'Bowls': return '🥣';
-      case 'Utensils': return '🥄';
-      case 'Serving': return '🫕';
-      default: return '📦';
-    }
-  };
-
   return (
     <Animated.View style={[styles.card, hasAdded && styles.cardActive, { transform: [{ scale: scaleAnim }] }]}>
       <View style={styles.cardMain}>
         {/* Visual Icon Column */}
         <View style={styles.visualCol}>
           <View style={[styles.iconCircle, hasAdded && styles.iconCircleActive]}>
-            <Text style={styles.iconTxt}>{getIcon()}</Text>
+            <Feather name="box" size={24} color={hasAdded ? '#4F46E5' : '#94A3B8'} />
           </View>
           {isDiscounted && (
             <View style={styles.discountBadgeSmall}>
@@ -209,7 +199,7 @@ export const ProductListingScreen = ({ navigation }) => {
         {/* Rich Search Box */}
         <View style={styles.searchStrip}>
           <View style={styles.searchPlate}>
-            <Text style={styles.searchGlass}>🔍</Text>
+            <Feather name="search" size={16} color="#64748B" style={{marginRight: SPACING.xs}} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search item or SKU..."
@@ -251,7 +241,7 @@ export const ProductListingScreen = ({ navigation }) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyArea}>
-              <Text style={{fontSize: 40, marginBottom: SPACING.md}}>🍽️</Text>
+              <Feather name="package" size={48} color={COLORS.gray300} style={{marginBottom: SPACING.md}} />
               <Text style={styles.emptyTxt}>No matching products available</Text>
             </View>
           }

@@ -8,22 +8,35 @@ import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/c
 
 import { Feather } from '@expo/vector-icons';
 
-const MetricCard = ({ title, value, icon, color, bgColor }) => (
+const MetricCard = ({ title, value, iconName, color, bgColor }) => (
   <View style={[styles.metricCard, { backgroundColor: bgColor }]}>
     <View style={styles.metricTop}>
-      <Text style={styles.metricIcon}>{icon}</Text>
+      <Feather name={iconName} size={22} color={color} style={{ opacity: 0.8 }} />
       <Text style={[styles.metricValue, { color }]}>{value}</Text>
     </View>
     <Text style={styles.metricTitle}>{title}</Text>
   </View>
 );
 
+const MenuCard = ({ title, iconName, color, onPress, subtitle }) => (
+  <TouchableOpacity style={styles.mgmtCard} onPress={onPress} activeOpacity={0.7}>
+    <View style={[styles.mgmtIcon, { backgroundColor: `${color}15` }]}>
+      <Feather name={iconName} size={24} color={color} />
+    </View>
+    <View style={styles.mgmtInfo}>
+      <Text style={styles.mgmtTitle}>{title}</Text>
+      <Text style={styles.mgmtSubtitle}>{subtitle}</Text>
+    </View>
+    <Feather name="chevron-right" size={20} color={COLORS.gray400} />
+  </TouchableOpacity>
+);
+
 const LiveOrderCard = ({ order, onPress }) => {
   const statusConfig = {
-    pending: { color: COLORS.warning, bg: COLORS.warningLight, label: '⏳ Pending' },
-    confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: '✓ Confirmed' },
-    dispatched: { color: COLORS.secondary, bg: '#EDE9FE', label: '🚚 Dispatched' },
-    delivered: { color: COLORS.success, bg: COLORS.successLight, label: '✅ Delivered' },
+    pending: { color: COLORS.warning, bg: COLORS.warningLight, label: 'Pending', iconName: 'clock' },
+    confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: 'Confirmed', iconName: 'check-circle' },
+    dispatched: { color: COLORS.secondary, bg: '#EDE9FE', label: 'Dispatched', iconName: 'truck' },
+    delivered: { color: COLORS.success, bg: COLORS.successLight, label: 'Delivered', iconName: 'check' },
   };
   const status = statusConfig[order.status] || statusConfig.pending;
   const isNew = order.status === 'pending';
@@ -41,11 +54,15 @@ const LiveOrderCard = ({ order, onPress }) => {
           <Text style={styles.liveOrderSalesman}>by {order.salesmanName}</Text>
         </View>
         <View style={[styles.liveOrderBadge, { backgroundColor: status.bg }]}>
+          <Feather name={status.iconName} size={12} color={status.color} style={{marginRight:4}} />
           <Text style={[styles.liveOrderBadgeText, { color: status.color }]}>{status.label}</Text>
         </View>
       </View>
       <View style={styles.liveOrderBody}>
-        <Text style={styles.liveOrderCustomer}>🏢 {order.customerName}</Text>
+        <View style={{flexDirection:'row', alignItems:'center'}}>
+          <Feather name="briefcase" size={14} color={COLORS.gray400} style={{marginRight:6}} />
+          <Text style={styles.liveOrderCustomer}>{order.customerName}</Text>
+        </View>
         <Text style={styles.liveOrderAmount}>₹{order.total.toLocaleString('en-IN')}</Text>
       </View>
       <View style={styles.liveOrderFooter}>
@@ -66,10 +83,10 @@ export const AdminDashboardScreen = ({ navigation }) => {
     const lowStockProducts = appState.products.filter(p => p.stock < 50).length;
 
     return [
-      { title: 'Total Orders', value: totalOrders, icon: '📦', color: COLORS.primary, bgColor: '#EEF2FF' },
-      { title: 'Revenue', value: `₹${(totalRevenue / 100000).toFixed(1)}L`, icon: '💰', color: COLORS.success, bgColor: '#ECFDF5' },
-      { title: 'Pending', value: pendingOrders, icon: '⏳', color: COLORS.warning, bgColor: '#FFFBEB' },
-      { title: 'Low Stock', value: lowStockProducts, icon: '⚠️', color: COLORS.danger, bgColor: '#FEF2F2' },
+      { title: 'Total Orders', value: totalOrders, iconName: 'package', color: COLORS.primary, bgColor: '#EEF2FF' },
+      { title: 'Revenue', value: `₹${(totalRevenue / 100000).toFixed(1)}L`, iconName: 'trending-up', color: COLORS.success, bgColor: '#ECFDF5' },
+      { title: 'Pending', value: pendingOrders, iconName: 'clock', color: COLORS.warning, bgColor: '#FFFBEB' },
+      { title: 'Low Stock', value: lowStockProducts, iconName: 'alert-circle', color: COLORS.danger, bgColor: '#FEF2F2' },
     ];
   }, [appState.orders, appState.products]);
 
@@ -78,7 +95,6 @@ export const AdminDashboardScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-        {/* Header INSIDE to handle stacking correctly */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -90,7 +106,7 @@ export const AdminDashboardScreen = ({ navigation }) => {
                 style={styles.notifBtn}
                 onPress={() => navigation.navigate('Notifications')}
               >
-                <Text style={styles.notifIcon}>🔔</Text>
+                <Feather name="bell" size={20} color={COLORS.white} />
                 {unreadNotifications > 0 && (
                   <View style={styles.notifBadge}>
                     <Text style={styles.notifBadgeText}>{unreadNotifications}</Text>
@@ -98,19 +114,17 @@ export const AdminDashboardScreen = ({ navigation }) => {
                 )}
               </TouchableOpacity>
               <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                <Feather name="log-out" size={20} color={COLORS.danger} />
+                <Feather name="log-out" size={20} color={COLORS.white} />
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
         <View style={styles.content}>
-          {/* Metrics flow properly now */}
           <View style={styles.metricsRow}>
             {metrics.map((m, i) => <MetricCard key={i} {...m} />)}
           </View>
 
-          {/* Real-Time Order Feed */}
           <View style={styles.feedSection}>
             <View style={styles.feedHeader}>
               <View style={styles.feedTitleRow}>
@@ -131,7 +145,6 @@ export const AdminDashboardScreen = ({ navigation }) => {
             ))}
           </View>
 
-          {/* Management */}
           <Text style={styles.sectionTitle}>Management</Text>
 
           <TouchableOpacity
@@ -140,13 +153,13 @@ export const AdminDashboardScreen = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <View style={[styles.mgmtIcon, { backgroundColor: '#EEF2FF' }]}>
-              <Text style={styles.mgmtIconText}>📦</Text>
+              <Feather name="package" size={20} color="#4F46E5" />
             </View>
             <View style={styles.mgmtInfo}>
               <Text style={styles.mgmtTitle}>Inventory Management</Text>
               <Text style={styles.mgmtSubtitle}>Manage products, stock & prices</Text>
             </View>
-            <Text style={styles.mgmtArrow}>→</Text>
+            <Feather name="chevron-right" size={18} color={COLORS.gray400} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -155,13 +168,13 @@ export const AdminDashboardScreen = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <View style={[styles.mgmtIcon, { backgroundColor: '#ECFDF5' }]}>
-              <Text style={styles.mgmtIconText}>📊</Text>
+              <Feather name="bar-chart-2" size={20} color="#10B981" />
             </View>
             <View style={styles.mgmtInfo}>
               <Text style={styles.mgmtTitle}>Analytics & Reports</Text>
               <Text style={styles.mgmtSubtitle}>Product sales & individual totals</Text>
             </View>
-            <Text style={styles.mgmtArrow}>→</Text>
+            <Feather name="chevron-right" size={18} color={COLORS.gray400} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -170,13 +183,13 @@ export const AdminDashboardScreen = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <View style={[styles.mgmtIcon, { backgroundColor: '#F5F3FF' }]}>
-              <Text style={styles.mgmtIconText}>👥</Text>
+              <Feather name="users" size={20} color="#8B5CF6" />
             </View>
             <View style={styles.mgmtInfo}>
               <Text style={styles.mgmtTitle}>Team Management</Text>
               <Text style={styles.mgmtSubtitle}>Add or remove salesmen access</Text>
             </View>
-            <Text style={styles.mgmtArrow}>→</Text>
+            <Feather name="chevron-right" size={18} color={COLORS.gray400} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -185,13 +198,13 @@ export const AdminDashboardScreen = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <View style={[styles.mgmtIcon, { backgroundColor: '#FEF3C7' }]}>
-              <Text style={styles.mgmtIconText}>🔔</Text>
+              <Feather name="bell" size={20} color="#F59E0B" />
             </View>
             <View style={styles.mgmtInfo}>
               <Text style={styles.mgmtTitle}>Notifications</Text>
               <Text style={styles.mgmtSubtitle}>{unreadNotifications} unread alerts</Text>
             </View>
-            <Text style={styles.mgmtArrow}>→</Text>
+            <Feather name="chevron-right" size={18} color={COLORS.gray400} />
           </TouchableOpacity>
 
           <View style={{ height: 40 }} />

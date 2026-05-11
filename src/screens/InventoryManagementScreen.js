@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 const ProductRow = ({ product, onUpdateProduct }) => {
   const [editing, setEditing] = useState(false);
@@ -161,14 +162,17 @@ export const InventoryManagementScreen = ({ navigation }) => {
       {/* Stats */}
       <View style={styles.statsRow}>
         <TouchableOpacity style={[styles.statChip, filter === 'all' && styles.statChipActive]} onPress={() => setFilter('all')}>
+          <Feather name="box" size={18} color={filter === 'all' ? '#FFF' : COLORS.gray400} style={{marginBottom:4}} />
           <Text style={[styles.statNum, filter === 'all' && styles.statNumActive]}>{stats.total}</Text>
           <Text style={[styles.statLabel, filter === 'all' && styles.statLabelActive]}>All</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.statChip, filter === 'low' && styles.statChipWarn]} onPress={() => setFilter('low')}>
+          <Feather name="alert-circle" size={18} color={COLORS.warning} style={{marginBottom:4}} />
           <Text style={[styles.statNum, filter === 'low' && { color: COLORS.warning }]}>{stats.low}</Text>
           <Text style={[styles.statLabel, filter === 'low' && { color: COLORS.warning }]}>Low</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.statChip, filter === 'out' && styles.statChipDanger]} onPress={() => setFilter('out')}>
+          <Feather name="slash" size={18} color={COLORS.danger} style={{marginBottom:4}} />
           <Text style={[styles.statNum, filter === 'out' && { color: COLORS.danger }]}>{stats.out}</Text>
           <Text style={[styles.statLabel, filter === 'out' && { color: COLORS.danger }]}>Out</Text>
         </TouchableOpacity>
@@ -176,7 +180,7 @@ export const InventoryManagementScreen = ({ navigation }) => {
 
       {/* Search */}
       <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Feather name="search" size={16} color={COLORS.gray400} style={{marginRight: SPACING.sm}} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name or SKU..."
@@ -196,7 +200,7 @@ export const InventoryManagementScreen = ({ navigation }) => {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={{ fontSize: 48 }}>📦</Text>
+            <Feather name="inbox" size={48} color={COLORS.gray300} />
             <Text style={styles.emptyText}>No products found</Text>
           </View>
         }

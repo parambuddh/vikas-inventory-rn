@@ -72,16 +72,29 @@ const WebResponsiveWrapper = ({ children }) => {
 const webStyles = StyleSheet.create({
   outer: {
     flex: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#0F172A', // Ultra-sleek premium deep slate
     alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        backgroundImage: 'radial-gradient(circle at 50% 30%, #1E293B 0%, #0F172A 100%)',
+      }
+    })
   },
   inner: {
     flex: 1,
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 680, // Enhanced modern wide-tablet layout prevents stretching while feeling generous
     backgroundColor: COLORS.background,
     overflow: 'hidden',
-    ...(Platform.OS === 'web' ? { boxShadow: '0 0 60px rgba(0,0,0,0.1)' } : {}),
+    ...Platform.select({
+      web: {
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 100px rgba(0,0,0,0.2)',
+        borderLeftWidth: 1,
+        borderRightWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)'
+      }
+    })
   },
 });
 

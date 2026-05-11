@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 export const SalesmenManagementScreen = ({ navigation }) => {
   const { appState, addSalesman, deleteSalesman } = useContext(AppContext);
@@ -75,7 +76,7 @@ export const SalesmenManagementScreen = ({ navigation }) => {
               <Text style={styles.userInfo}>Pass: ••••••••</Text>
             </View>
             <TouchableOpacity style={styles.deleteBtn} onPress={() => confirmDelete(item)}>
-              <Text style={{fontSize: 16}}>🗑️</Text>
+              <Feather name="trash-2" size={16} color={COLORS.danger} />
             </TouchableOpacity>
           </View>
         )}

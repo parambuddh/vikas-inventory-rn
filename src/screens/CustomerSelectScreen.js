@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 const CustomerCard = ({ customer, onPress, isSelected }) => (
   <TouchableOpacity
@@ -26,7 +27,7 @@ const CustomerCard = ({ customer, onPress, isSelected }) => (
     <View style={styles.customerCardHeader}>
       <View style={styles.customerInfo}>
         <Text style={styles.customerName}>{customer.name}</Text>
-        <Text style={styles.customerCity}>📍 {customer.city}</Text>
+        <Text style={styles.customerGst}>GSTIN: {customer.gstin || 'N/A'}</Text>
       </View>
       {isSelected && (
         <View style={styles.selectedCheckmark}>
@@ -38,10 +39,10 @@ const CustomerCard = ({ customer, onPress, isSelected }) => (
     <View style={styles.customerDetails}>
       <View style={styles.detailItem}>
         <Text style={styles.detailLabel}>Orders</Text>
-        <Text style={styles.detailValue}>{customer.totalOrders}</Text>
+        <Text style={styles.detailValue}>{customer.totalOrders || '0'}</Text>
       </View>
       <View style={styles.detailItem}>
-        <Text style={styles.detailLabel}>City</Text>
+        <Feather name="map-pin" size={12} color={COLORS.gray400} style={{marginBottom:2}} />
         <Text style={styles.detailValue}>{customer.city}</Text>
       </View>
       <View style={styles.detailItem}>
@@ -94,9 +95,10 @@ export const CustomerSelectScreen = ({ navigation }) => {
       >
         {/* Search Bar */}
         <View style={styles.searchContainer}>
+          <Feather name="search" size={18} color={COLORS.gray400} style={{marginRight: SPACING.sm}} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search customers..."
+            placeholder="Search by name or city..."
             value={searchText}
             onChangeText={setSearchText}
             placeholderTextColor={COLORS.gray400}
@@ -108,9 +110,7 @@ export const CustomerSelectScreen = ({ navigation }) => {
             >
               <Text style={styles.clearText}>✕</Text>
             </TouchableOpacity>
-          ) : (
-            <Text style={styles.searchIcon}>🔍</Text>
-          )}
+          ) : null}
         </View>
 
         {/* Customer List */}
@@ -129,7 +129,7 @@ export const CustomerSelectScreen = ({ navigation }) => {
           />
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🔍</Text>
+            <Feather name="users" size={48} color={COLORS.gray300} style={{marginBottom:SPACING.md}} />
             <Text style={styles.emptyText}>No customers found</Text>
           </View>
         )}
@@ -137,8 +137,8 @@ export const CustomerSelectScreen = ({ navigation }) => {
 
 
       {/* Add Customer FAB */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
-        <Text style={styles.fabText}>+ Add Customer</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => alert('Feature coming soon!')} activeOpacity={0.8}>
+        <Feather name="plus" size={24} color="#FFF" />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -313,8 +313,9 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute', bottom: 30, right: SPACING.lg,
-    backgroundColor: COLORS.primary, paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md, borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.primary, 
+    width: 56, height: 56, borderRadius: 28,
+    justifyContent: 'center', alignItems: 'center',
     ...SHADOWS.lg,
   },
   fabText: { color: COLORS.white, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700' },

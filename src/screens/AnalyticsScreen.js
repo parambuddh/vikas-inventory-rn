@@ -6,6 +6,7 @@ import {
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 const FILTER_OPTIONS = ['Weekly', 'Monthly', 'Quarterly', 'Yearly'];
 
@@ -136,7 +137,10 @@ export const AnalyticsScreen = ({ navigation }) => {
 
         {/* Chart 1: Revenue Trend */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>📈 Revenue Growth (₹k)</Text>
+          <View style={styles.chartHeaderRow}>
+            <Feather name="trending-up" size={16} color={COLORS.primary} />
+            <Text style={styles.chartTitleClean}>Revenue Growth (₹k)</Text>
+          </View>
           {trendData.labels.length > 1 ? (
             <LineChart
               data={trendData}
@@ -152,7 +156,10 @@ export const AnalyticsScreen = ({ navigation }) => {
 
         {/* Chart 2: Salesman Output */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>📊 Leaderboard Output (₹k)</Text>
+          <View style={styles.chartHeaderRow}>
+            <Feather name="bar-chart-2" size={16} color="#10B981" />
+            <Text style={styles.chartTitleClean}>Leaderboard Output (₹k)</Text>
+          </View>
           {salesmenChart.labels.length > 0 ? (
             <BarChart
               data={salesmenChart}
@@ -174,7 +181,10 @@ export const AnalyticsScreen = ({ navigation }) => {
 
         {/* Chart 3: Category Pie */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>🍕 Segment Concentration</Text>
+          <View style={styles.chartHeaderRow}>
+            <Feather name="pie-chart" size={16} color="#8B5CF6" />
+            <Text style={styles.chartTitleClean}>Segment Concentration</Text>
+          </View>
           {categoryPie.length > 0 ? (
             <PieChart
               data={categoryPie}
@@ -221,7 +231,8 @@ const styles = StyleSheet.create({
   summarySub: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
 
   chartContainer: { backgroundColor: COLORS.white, padding: SPACING.md, borderRadius: BORDER_RADIUS.lg, marginBottom: SPACING.lg, ...SHADOWS.sm },
-  chartTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '700', color: COLORS.gray800, marginBottom: SPACING.md, paddingLeft: 8 },
+  chartHeaderRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: 8, marginBottom: SPACING.md, gap: 8 },
+  chartTitleClean: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '700', color: COLORS.gray800 },
   chartStyles: {
     marginVertical: 8,
     borderRadius: 16

@@ -10,11 +10,11 @@ import { Feather } from '@expo/vector-icons';
 const STATUS_TABS = ['All', 'Pending', 'Confirmed', 'Dispatched', 'Delivered'];
 
 const statusConfig = {
-  pending: { color: COLORS.warning, bg: COLORS.warningLight, label: 'Pending', icon: '⏳' },
-  confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: 'Confirmed', icon: '✓' },
-  dispatched: { color: '#7C3AED', bg: '#EDE9FE', label: 'Dispatched', icon: '🚚' },
-  delivered: { color: COLORS.success, bg: COLORS.successLight, label: 'Delivered', icon: '✅' },
-  cancelled: { color: COLORS.danger, bg: COLORS.dangerLight, label: 'Cancelled', icon: '✕' },
+  pending: { color: COLORS.warning, bg: COLORS.warningLight, label: 'Pending', iconName: 'clock' },
+  confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: 'Confirmed', iconName: 'check-circle' },
+  dispatched: { color: '#7C3AED', bg: '#EDE9FE', label: 'Dispatched', iconName: 'truck' },
+  delivered: { color: COLORS.success, bg: COLORS.successLight, label: 'Delivered', iconName: 'check-square' },
+  cancelled: { color: COLORS.danger, bg: COLORS.dangerLight, label: 'Cancelled', iconName: 'x-circle' },
 };
 
 const OrderCard = ({ order, onPress }) => {
@@ -28,13 +28,14 @@ const OrderCard = ({ order, onPress }) => {
           <Text style={styles.orderDate}>{order.date}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-          <Text style={[styles.statusText, { color: status.color }]}>{status.icon} {status.label}</Text>
+          <Feather name={status.iconName} size={11} color={status.color} style={{marginRight: 4}} />
+          <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
         </View>
       </View>
 
       <View style={styles.orderBody}>
         <View style={styles.orderCustomerRow}>
-          <Text style={styles.orderCustomerIcon}>🏢</Text>
+          <Feather name="briefcase" size={14} color={COLORS.gray400} style={{marginRight:6}} />
           <Text style={styles.orderCustomer} numberOfLines={1}>{order.customerName}</Text>
         </View>
         {order.salesmanName && (
@@ -201,13 +202,11 @@ const styles = StyleSheet.create({
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   orderId: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '700', color: COLORS.gray900 },
   orderDate: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400, marginTop: 2 },
-  statusBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full },
-  statusText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600' },
-
-  orderBody: { marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.divider },
-  orderCustomerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  orderCustomerIcon: { fontSize: 14 },
-  orderCustomer: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600', color: COLORS.gray800, flex: 1 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full },
+  statusText: { fontSize: 11, fontWeight: '700' },
+  orderBody: { marginTop: SPACING.md, paddingVertical: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.divider },
+  orderCustomerRow: { flexDirection: 'row', alignItems: 'center' },
+  orderCustomer: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600', color: COLORS.gray900, flex: 1 },
   orderSalesman: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray400, marginTop: 2, marginLeft: 22 },
 
   orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.md },

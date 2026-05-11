@@ -30,20 +30,28 @@ const styles = StyleSheet.create({
   },
   webOuter: {
     flex: 1,
-    backgroundColor: COLORS.gray200,
+    backgroundColor: '#0F172A', // Sophisticated Slate Background for Web
     alignItems: 'center',
-  },
-  webInner: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 480,
-    backgroundColor: COLORS.background,
-    // Phone-like shadow on web
+    justifyContent: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 0 40px rgba(0,0,0,0.12)',
+        backgroundImage: 'radial-gradient(circle at top left, #1e293b 0%, #0f172a 100%)',
       },
-      default: {},
+    }),
+  },
+  webInner: {
+    width: '100%',
+    maxWidth: 600, // Perfect "Tablet" scale for web, avoiding stretch while retaining full usability
+    height: '100%',
+    backgroundColor: COLORS.white,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        borderLeftWidth: 1,
+        borderRightWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+      },
     }),
   },
 });
