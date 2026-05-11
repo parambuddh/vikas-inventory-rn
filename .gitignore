@@ -41,3 +41,8 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Backend specific
+generated/prisma
+/vikas-backend/node_modules
+/vikas-backend/.env
