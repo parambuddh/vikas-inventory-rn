@@ -158,8 +158,16 @@ export const ProductListingScreen = ({ navigation }) => {
       return { count, total };
     }, [appState.cart]);
 
+    // HIGH PERFORMANCE LOOKUP: Construct hashmap to make renderItem lookup O(1) instead of O(N)
+    const cartMap = useMemo(() => {
+      return appState.cart.reduce((acc, item) => {
+        acc[item.id] = item;
+        return acc;
+      }, {});
+    }, [appState.cart]);
+
     const handleQty = useCallback((prod, newQty, currentApplied) => {
-      const exist = appState.cart.find(x => x.id === prod.id);
+      const exist = cartMap[prod.id];
       const priceToUse = currentApplied;
       if (newQty <= 0) {
         updateCartQuantity(prod.id, 0);
@@ -167,17 +175,17 @@ export const ProductListingScreen = ({ navigation }) => {
         if (exist) updateCartQuantity(prod.id, newQty);
         else addToCart({ ...prod, appliedPrice: priceToUse }, newQty);
       }
-    }, [appState.cart, addToCart, updateCartQuantity]);
+    }, [cartMap, addToCart, updateCartQuantity]);
 
     const handlePrice = useCallback((id, p) => {
-      const inCart = appState.cart.some(c => c.id === id);
+      const inCart = !!cartMap[id];
       if (inCart) {
         updateCartPrice(id, p);
       } else {
         // Store in local transient hash map for later inclusion upon 'ADD' click
         setPreCartPrices(prev => ({ ...prev, [id]: p }));
       }
-    }, [appState.cart, updateCartPrice]);
+    }, [cartMap, updateCartPrice]);
 
     return (
       <SafeAreaView style={styles.wrapper}>
@@ -186,7 +194,7 @@ export const ProductListingScreen = ({ navigation }) => {
         {/* Compact Sleek Header */}
         <View style={styles.headerBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.hdrBack}>
-            <Text style={styles.hdrBackTxt}>←</Text>
+            <Feather name="arrow-left" size={20} color="#334155" />
           </TouchableOpacity>
           <View style={styles.hdrInfo}>
             <Text style={styles.hdrSub}>Ordering for:</Text>
@@ -220,7 +228,7 @@ export const ProductListingScreen = ({ navigation }) => {
           contentContainerStyle={styles.catalogList}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
-            const cartItem = appState.cart.find(c => c.id === item.id);
+            const cartItem = cartMap[item.id];
             // Precedence: Cart Item Applied Price -> Transcient Pre-Cart Price -> Master Product Price
             const activeDisplayPrice = cartItem?.appliedPrice || preCartPrices[item.id] || item.price;
             

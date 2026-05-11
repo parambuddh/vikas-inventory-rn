@@ -156,7 +156,7 @@ export const AppProvider = ({ children }) => {
         sgstAmount: isInterState ? 0 : taxAmount / 2,
         igstAmount: isInterState ? taxAmount : 0,
         lineTotal: taxableValue + taxAmount,
-        discount: ((item.price - unitPrice) / item.price * 100).toFixed(1),
+        discount: item.price > 0 ? ((item.price - unitPrice) / item.price * 100).toFixed(1) : '0.0',
       };
     });
 
@@ -180,7 +180,7 @@ export const AppProvider = ({ children }) => {
 
     // Add notification for admin
     const newNotification = {
-      id: Date.now(),
+      id: `${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       type: 'order',
       title: 'New Order',
       message: `${appState.currentUser?.name} placed order ${newOrder.id} for ${customer.name} — ₹${newOrder.total.toLocaleString('en-IN')}`,
@@ -240,7 +240,7 @@ export const AppProvider = ({ children }) => {
   // --- TEAM MANAGEMENT (Admin only) ---
   const addSalesman = (newUserData) => {
     const newUser = {
-      id: Date.now(),
+      id: `${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       role: 'salesman',
       ...newUserData,
     };

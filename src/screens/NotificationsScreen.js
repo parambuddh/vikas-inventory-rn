@@ -5,11 +5,12 @@ import {
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 const notifConfig = {
-  order: { icon: '📦', color: COLORS.primary, bg: '#EEF2FF' },
-  stock: { icon: '⚠️', color: COLORS.warning, bg: COLORS.warningLight },
-  system: { icon: '🔔', color: COLORS.gray600, bg: COLORS.backgroundAlt },
+  order: { icon: 'package', color: COLORS.primary, bg: '#EEF2FF' },
+  stock: { icon: 'alert-circle', color: COLORS.warning, bg: COLORS.warningLight },
+  system: { icon: 'bell', color: COLORS.gray600, bg: COLORS.backgroundAlt },
 };
 
 const NotificationItem = ({ notification, onPress }) => {
@@ -23,7 +24,7 @@ const NotificationItem = ({ notification, onPress }) => {
       activeOpacity={0.7}
     >
       <View style={[styles.notifIcon, { backgroundColor: config.bg }]}>
-        <Text style={styles.notifIconText}>{config.icon}</Text>
+        <Feather name={config.icon} size={18} color={config.color} />
       </View>
       <View style={styles.notifContent}>
         <View style={styles.notifHeader}>
@@ -45,7 +46,7 @@ export const NotificationsScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+          <Feather name="arrow-left" size={18} color={COLORS.gray900} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Notifications</Text>
@@ -67,7 +68,7 @@ export const NotificationsScreen = ({ navigation }) => {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🔔</Text>
+            <Feather name="bell-off" size={48} color={COLORS.gray300} style={{marginBottom: SPACING.md}} />
             <Text style={styles.emptyText}>No notifications</Text>
           </View>
         }

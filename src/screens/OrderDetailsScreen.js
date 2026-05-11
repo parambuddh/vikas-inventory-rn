@@ -5,14 +5,15 @@ import {
 } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../styles/colors';
+import { Feather } from '@expo/vector-icons';
 
 const STATUS_FLOW = ['pending', 'confirmed', 'dispatched', 'delivered'];
 const statusConfig = {
-  pending: { color: COLORS.warning, bg: COLORS.warningLight, label: 'Pending', icon: '⏳' },
-  confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: 'Confirmed', icon: '✓' },
-  dispatched: { color: '#7C3AED', bg: '#EDE9FE', label: 'Dispatched', icon: '🚚' },
-  delivered: { color: COLORS.success, bg: COLORS.successLight, label: 'Delivered', icon: '✅' },
-  cancelled: { color: COLORS.danger, bg: COLORS.dangerLight, label: 'Cancelled', icon: '✕' },
+  pending: { color: COLORS.warning, bg: COLORS.warningLight, label: 'Pending', icon: 'clock' },
+  confirmed: { color: COLORS.info, bg: COLORS.infoLight, label: 'Confirmed', icon: 'check-circle' },
+  dispatched: { color: '#7C3AED', bg: '#EDE9FE', label: 'Dispatched', icon: 'truck' },
+  delivered: { color: COLORS.success, bg: COLORS.successLight, label: 'Delivered', icon: 'check-square' },
+  cancelled: { color: COLORS.danger, bg: COLORS.dangerLight, label: 'Cancelled', icon: 'x-circle' },
 };
 
 export const OrderDetailsScreen = ({ navigation, route }) => {
@@ -27,13 +28,13 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>←</Text>
+            <Feather name="arrow-left" size={18} color={COLORS.gray900} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Order Details</Text>
           <View style={{ width: 36 }} />
         </View>
         <View style={styles.emptyState}>
-          <Text style={{ fontSize: 48 }}>🔍</Text>
+          <Feather name="search" size={48} color={COLORS.gray300} style={{marginBottom: SPACING.md}} />
           <Text style={styles.emptyText}>Order not found</Text>
         </View>
       </SafeAreaView>
@@ -61,7 +62,7 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+          <Feather name="arrow-left" size={18} color={COLORS.gray900} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
         <View style={{ width: 36 }} />
@@ -75,7 +76,8 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
             <Text style={styles.orderDate}>{order.date} · by {order.salesmanName}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-            <Text style={[styles.statusText, { color: status.color }]}>{status.icon} {status.label}</Text>
+            <Feather name={status.icon} size={12} color={status.color} style={{marginRight: 4, marginTop: Platform.OS === 'web' ? 1 : 0}} />
+            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
         </View>
 
@@ -111,7 +113,10 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Customer</Text>
           <View style={styles.infoCard}>
-            <Text style={styles.customerName}>🏢 {order.customerName}</Text>
+            <View style={{flexDirection:'row', alignItems:'center'}}>
+              <Feather name="briefcase" size={14} color={COLORS.gray500} style={{marginRight:8}} />
+              <Text style={styles.customerName}>{order.customerName}</Text>
+            </View>
           </View>
         </View>
 
@@ -157,9 +162,10 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
           <View style={styles.adminActions}>
             {nextStatus && order.status !== 'cancelled' && (
               <TouchableOpacity style={styles.actionBtn} onPress={handleUpdateStatus} activeOpacity={0.8}>
-                <Text style={styles.actionBtnText}>
-                  Mark as {statusConfig[nextStatus].label} →
-                </Text>
+                <View style={{flexDirection:'row', alignItems:'center'}}>
+                  <Text style={styles.actionBtnText}>Mark as {statusConfig[nextStatus].label}</Text>
+                  <Feather name="chevron-right" size={16} color="#FFF" style={{marginLeft:4}} />
+                </View>
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -167,7 +173,10 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
               onPress={() => navigation.navigate('Invoice', { orderId: order.id })}
               activeOpacity={0.8}
             >
-              <Text style={styles.invoiceBtnText}>🧾 Generate Invoice</Text>
+              <View style={{flexDirection:'row', alignItems:'center'}}>
+                <Feather name="file-text" size={16} color={COLORS.primary} style={{marginRight:8}} />
+                <Text style={styles.invoiceBtnText}>Generate Invoice</Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -204,8 +213,8 @@ const styles = StyleSheet.create({
   },
   orderId: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '800', color: COLORS.gray900 },
   orderDate: { fontSize: TYPOGRAPHY.sizes.xs, color: COLORS.gray500, marginTop: 4 },
-  statusBadge: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: BORDER_RADIUS.full },
-  statusText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 24, paddingHorizontal: SPACING.md, borderRadius: BORDER_RADIUS.full },
+  statusText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
 
   // Timeline
   timelineCard: {
