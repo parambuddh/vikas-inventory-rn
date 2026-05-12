@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALESMAN
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  first_name    String
+  last_name     String
+  phone         String   @unique
+  email         String?  @unique
+  password_hash String
+  address       String?
+  photo_url     String?
+  role          Role     @default(SALESMAN)
+  is_active     Boolean  @default(true)
+  created_by    Int?     // ID of the admin who created this user
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  creator       User?    @relation("UserCreator", fields: [created_by], references: [id])
+  created_users User[]   @relation("UserCreator")
+  created_customers Customer[] @relation("CustomerCreator")
+
+  @@map("users")
+}
+
+model Customer {
+  id                    Int      @id @default(autoincrement())
+  shop_name             String
+  owner_name            String
+  phone                 String   @unique
+  alternate_phone       String?
+  email                 String?
+  address               String
+  gst_number            String?
+  area                  String?
+  notes                 String?
+  latitude              Float?
+  longitude             Float?
+  total_orders_amount   Decimal  @default(0) @db.Decimal(10, 2)
+  total_received_amount Decimal  @default(0) @db.Decimal(10, 2)
+  pending_amount        Decimal  @default(0) @db.Decimal(10, 2)
+  is_active             Boolean  @default(true)
+  created_by            Int
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  creator               User     @relation("CustomerCreator", fields: [created_by], references: [id])
+
+  @@index([shop_name])
+  @@index([phone])
+  @@index([area])
+  @@map("customers")
+}
