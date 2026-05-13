@@ -5,6 +5,11 @@ import path from 'path';
 import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/users/users.routes';
 import customerRoutes from './modules/customers/customers.routes';
+import productRoutes from './modules/products/products.routes';
+import inventoryRoutes from './modules/inventory/inventory.routes';
+import orderRoutes from './modules/orders/orders.routes';
+import paymentRoutes from './modules/payments/payments.routes';
+import visitRoutes from './modules/visits/visits.routes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 
@@ -32,6 +37,11 @@ app.get('/api/health', (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/visits', visitRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
